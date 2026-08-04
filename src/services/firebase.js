@@ -717,3 +717,31 @@ export async function syncAllUsersToAuth(defaultPassword = 'password123') {
     return { success: false, message: err.message };
   }
 }
+
+// Get the last used LPPKP number from Settings
+export async function getLastLppkpNumber() {
+  try {
+    const dbRef = ref(db, 'Settings/LastLppkpNumber');
+    const snapshot = await get(dbRef);
+    if (snapshot.exists()) {
+      return Number(snapshot.val()) || 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error fetching last LPPKP number:', error);
+    return 0;
+  }
+}
+
+// Save the last used LPPKP number to Settings
+export async function saveLastLppkpNumber(number) {
+  try {
+    const num = Number(number);
+    if (!isNaN(num)) {
+      const dbRef = ref(db, 'Settings/LastLppkpNumber');
+      await set(dbRef, num);
+    }
+  } catch (error) {
+    console.error('Error saving last LPPKP number:', error);
+  }
+}

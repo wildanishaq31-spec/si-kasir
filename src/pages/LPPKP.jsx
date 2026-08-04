@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirebaseDataAsArray, logAudit } from '../services/firebase';
+import { getFirebaseDataAsArray, logAudit, getLastLppkpNumber, saveLastLppkpNumber } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { determineKlaster } from '../utils/klasterHelper';
 import logoBondowosoImg from '../assets/logo_bondowoso.jpg';
@@ -333,6 +333,8 @@ export default function LPPKP() {
   const [filterDate,         setFilterDate]         = useState(todayStr);
   const [filterMonth,        setFilterMonth]        = useState(todayStr.substring(0, 7));
   const [noLPPKP,            setNoLPPKP]            = useState(() => localStorage.getItem('lppkp_nomor') || '');
+  const [autoSaveLppkp,      setAutoSaveLppkp]      = useState(true);
+  const [lastLppkpInfo,      setLastLppkpInfo]      = useState(null);
   const [loading,            setLoading]            = useState(false);
   const [showKwitansiModal,  setShowKwitansiModal]  = useState(false);
   const [showRealisasiModal, setShowRealisasiModal] = useState(false);
@@ -363,13 +365,22 @@ export default function LPPKP() {
   const ttdPembantu = getTtd('pembantu');
   const ttdDinkes = getTtd('dinas');
 
+  const saveLppkpIfChecked = () => {
+    if (autoSaveLppkp && noLPPKP) {
+      saveLastLppkpNumber(noLPPKP);
+      setLastLppkpInfo(Number(noLPPKP));
+    }
+  };
+
   const handlePrintLPPKP = () => {
+    saveLppkpIfChecked();
     document.body.classList.remove('printing-kwitansi', 'printing-realisasi');
     window.print();
     logAudit(user?.username, 'PRINT_LAPORAN', 'Cetak Dokumen Laporan Pemungutan LPPKP');
   };
 
   const handlePrintKwitansi = () => {
+    saveLppkpIfChecked();
     document.body.classList.remove('printing-realisasi');
     document.body.classList.add('printing-kwitansi');
     window.print();
@@ -379,6 +390,7 @@ export default function LPPKP() {
   };
 
   const handlePrintRealisasi = () => {
+    saveLppkpIfChecked();
     document.body.classList.remove('printing-kwitansi');
     document.body.classList.add('printing-realisasi');
     window.print();
@@ -525,6 +537,24 @@ export default function LPPKP() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const fetchLastLppkp = async () => {
+    const lastNum = await getLastLppkpNumber();
+    setLastLppkpInfo(lastNum);
+    
+    // Jika input masih kosong ATAU sama dengan nilai default sebelumnya, 
+    // kita sarankan nomor baru
+    if (!noLPPKP || localStorage.getItem('lppkp_nomor') === noLPPKP) {
+      const nextNum = (lastNum || 0) + 1;
+      setNoLPPKP(String(nextNum));
+      localStorage.setItem('lppkp_nomor', String(nextNum));
+    }
+  };
+
+  useEffect(() => {
+    fetchLastLppkp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleNoChange = (v) => {
     setNoLPPKP(v);
     localStorage.setItem('lppkp_nomor', v);
@@ -652,16 +682,45 @@ export default function LPPKP() {
               </button>
             </div>
           </div>
-          <div className="row g-3 align-items-end">
-            <div className="col-md-2">
-              <label className="small text-muted fw-semibold mb-1">No LPPKP</label>
-              <input
-                type="text"
-                className="form-control"
-                value={noLPPKP}
-                onChange={(e) => handleNoChange(e.target.value)}
-                placeholder="Contoh: 157"
-              />
+          <div className="row g-3">
+            <div className="col-md-3">
+              <div className="d-flex justify-content-between mb-1">
+                <label className="small text-muted fw-semibold">No LPPKP</label>
+                {lastLppkpInfo !== null && (
+                  <span className="small text-muted" style={{ fontSize: '0.75rem' }}>
+                    (Terakhir: <b>{lastLppkpInfo}</b>)
+                  </span>
+                )}
+              </div>
+              <div className="input-group">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={noLPPKP}
+                  onChange={(e) => handleNoChange(e.target.value)}
+                  placeholder="Contoh: 157"
+                />
+                <button 
+                  className="btn btn-outline-secondary" 
+                  type="button"
+                  onClick={fetchLastLppkp}
+                  title="Ambil / Refresh Nomor Terakhir"
+                >
+                  <i className="fa-solid fa-rotate"></i>
+                </button>
+              </div>
+              <div className="form-check mt-1">
+                <input 
+                  className="form-check-input" 
+                  type="checkbox" 
+                  id="autoSaveCheck"
+                  checked={autoSaveLppkp}
+                  onChange={(e) => setAutoSaveLppkp(e.target.checked)}
+                />
+                <label className="form-check-label small text-muted" htmlFor="autoSaveCheck" style={{ fontSize: '0.75rem' }}>
+                  Simpan nomor setelah cetak
+                </label>
+              </div>
             </div>
             <div className="col-md-3">
               <label className="small text-muted fw-semibold mb-1">Tipe Laporan</label>
@@ -670,7 +729,7 @@ export default function LPPKP() {
                 <option value="month">Per Bulan (Bulanan)</option>
               </select>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label className="small text-muted fw-semibold mb-1">
                 {filterMode === 'date' ? 'Pilih Tanggal' : 'Pilih Bulan & Tahun'}
               </label>
