@@ -225,7 +225,7 @@ export default function MasterUser() {
                       <td className="px-4 py-3 fw-bold">{u.Nama}</td>
                       <td className="py-3 text-muted">{u.Username}</td>
                       <td className="py-3">
-                        <span className={`badge ${u.Role === 'Admin' || u.Role === 'Super Admin' ? 'bg-primary' : 'bg-info'}`}>
+                        <span className={`badge ${u.Role === 'Admin' || u.Role === 'Super Admin' ? 'bg-primary' : u.Role === 'Bendahara' ? 'bg-warning text-dark' : 'bg-info'}`}>
                           {u.Role}
                         </span>
                       </td>
@@ -334,6 +334,7 @@ export default function MasterUser() {
                           onChange={e => setFormData({...formData, role: e.target.value})}
                         >
                           <option value="Kasir">Kasir</option>
+                          <option value="Bendahara">Bendahara</option>
                           <option value="Admin">Admin</option>
                         </select>
                       </div>

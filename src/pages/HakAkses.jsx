@@ -41,14 +41,31 @@ const MENU_ACCESS_LIST = [
     title: 'Riwayat Import',
     path: '/riwayat-import',
     icon: 'fa-solid fa-clock-rotate-left',
-    color: '#fd7e14',
+    color: '#fb923c',
     description: 'Lihat daftar riwayat file RME yang pernah diimport'
+  },
+  {
+    key: 'lapPendapatan',
+    title: 'Laporan Pendapatan',
+    path: '/laporan',
+    icon: 'fa-solid fa-file-invoice-dollar',
+    color: '#34d399',
+    description: 'Akses halaman rekap Laporan Pendapatan'
+  },
+  {
+    key: 'lppkp',
+    title: 'LPPKP',
+    path: '/lppkp',
+    icon: 'fa-solid fa-file-contract',
+    color: '#c084fc',
+    description: 'Akses halaman rekap LPPKP'
   }
 ];
 
 export default function HakAkses() {
   const { user, permissions, updatePermission, isAdmin } = useAuth();
   const [updatingKey, setUpdatingKey] = useState(null);
+  const [activeRole, setActiveRole] = useState('Kasir');
 
   const handleTogglePermission = async (menu) => {
     if (!isAdmin) {
@@ -56,22 +73,22 @@ export default function HakAkses() {
       return;
     }
 
-    const currentStatus = Boolean(permissions[menu.key]);
+    const currentStatus = Boolean(permissions[activeRole] && permissions[activeRole][menu.key]);
     const nextStatus = !currentStatus;
 
     setUpdatingKey(menu.key);
-    const res = await updatePermission(menu.key, nextStatus);
+    const res = await updatePermission(activeRole, menu.key, nextStatus);
     setUpdatingKey(null);
 
     if (res.success) {
       await logAudit(
         user?.username,
         'HAK_AKSES',
-        `Menu "${menu.title}" di-set ${nextStatus ? 'ON (Izinkan)' : 'OFF (Sembunyikan)'} untuk Kasir`
+        `Menu "${menu.title}" di-set ${nextStatus ? 'ON (Izinkan)' : 'OFF (Sembunyikan)'} untuk ${activeRole}`
       );
       showSuccessToast(
         'Hak Akses Diperbarui!',
-        `Menu "${menu.title}" sekarang ${nextStatus ? 'DI-IZINKAN (ON)' : 'DISEMBUNYIKAN (OFF)'} untuk Kasir.`
+        `Menu "${menu.title}" sekarang ${nextStatus ? 'DI-IZINKAN (ON)' : 'DISEMBUNYIKAN (OFF)'} untuk ${activeRole}.`
       );
     } else {
       showErrorToast('Gagal Perbarui', res.message || 'Terjadi kesalahan saat menyimpan hak akses.');
@@ -94,9 +111,9 @@ export default function HakAkses() {
               <i className="fa-solid fa-user-shield fs-3"></i>
             </div>
             <div>
-              <h4 className="fw-bold m-0 text-white">Pengaturan Hak Akses Kasir</h4>
+              <h4 className="fw-bold m-0 text-white">Pengaturan Hak Akses {activeRole}</h4>
               <p className="m-0 text-white text-opacity-75 small">
-                Aktifkan (ON) atau Nonaktifkan (OFF) akses menu berikut untuk pengguna ber-role <strong>Kasir</strong>
+                Aktifkan (ON) atau Nonaktifkan (OFF) akses menu berikut untuk pengguna ber-role <strong>{activeRole}</strong>
               </p>
             </div>
           </div>
@@ -110,9 +127,29 @@ export default function HakAkses() {
       <div className="alert alert-info border-0 rounded-4 shadow-xs mb-4 d-flex align-items-center p-3">
         <i className="fa-solid fa-circle-info fs-4 text-info me-3"></i>
         <div className="small text-secondary">
-          <strong>Petunjuk Penggunaan:</strong> Jika toggle bernilai <strong>ON (Aktif)</strong>, maka pengguna dengan role <strong>Kasir</strong> dapat melihat dan mengakses menu tersebut di sidebar. Jika <strong>OFF (Nonaktif)</strong>, menu akan tersembunyi dan tidak dapat diakses oleh Kasir.
+          <strong>Petunjuk Penggunaan:</strong> Jika toggle bernilai <strong>ON (Aktif)</strong>, maka pengguna dengan role <strong>{activeRole}</strong> dapat melihat dan mengakses menu tersebut di sidebar. Jika <strong>OFF (Nonaktif)</strong>, menu akan tersembunyi dan tidak dapat diakses oleh {activeRole}.
         </div>
       </div>
+
+      {/* Role Selection Tabs */}
+      <ul className="nav nav-pills mb-4 gap-2">
+        <li className="nav-item">
+          <button 
+            className={`nav-link px-4 py-2 fw-semibold rounded-pill ${activeRole === 'Kasir' ? 'active shadow-sm' : 'bg-white text-muted border'}`}
+            onClick={() => setActiveRole('Kasir')}
+          >
+            <i className="fa-solid fa-cash-register me-2"></i>Hak Akses Kasir
+          </button>
+        </li>
+        <li className="nav-item">
+          <button 
+            className={`nav-link px-4 py-2 fw-semibold rounded-pill ${activeRole === 'Bendahara' ? 'active shadow-sm' : 'bg-white text-muted border'}`}
+            onClick={() => setActiveRole('Bendahara')}
+          >
+            <i className="fa-solid fa-file-invoice-dollar me-2"></i>Hak Akses Bendahara
+          </button>
+        </li>
+      </ul>
 
       {/* Main Permissions List Table */}
       <div className="card rounded-4 border-0 shadow-sm overflow-hidden mb-4">
@@ -125,16 +162,16 @@ export default function HakAkses() {
                 </th>
                 <th className="py-3 text-uppercase small fw-bold text-muted">DESKRIPSI & PATH</th>
                 <th className="py-3 text-uppercase small fw-bold text-muted text-center" style={{ width: '200px' }}>
-                  STATUS KASIR
+                  STATUS {activeRole.toUpperCase()}
                 </th>
                 <th className="pe-4 py-3 text-uppercase small fw-bold text-muted text-end" style={{ width: '140px' }}>
-                  AKSES KASIR
+                  AKSES {activeRole.toUpperCase()}
                 </th>
               </tr>
             </thead>
             <tbody>
               {MENU_ACCESS_LIST.map((menu) => {
-                const isOn = Boolean(permissions[menu.key]);
+                const isOn = Boolean(permissions[activeRole] && permissions[activeRole][menu.key]);
                 const isUpdating = updatingKey === menu.key;
 
                 return (

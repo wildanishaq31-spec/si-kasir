@@ -9,7 +9,9 @@ const DEFAULT_PERMISSIONS = {
   masterUser: false,
   masterPrint: false,
   masterWa: false,
-  riwayatImport: false
+  riwayatImport: false,
+  lapPendapatan: false,
+  lppkp: false
 };
 
 export const AuthProvider = ({ children }) => {
@@ -32,16 +34,26 @@ export const AuthProvider = ({ children }) => {
     return null;
   });
 
-  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS);
+  const [permissions, setPermissions] = useState({
+    Kasir: DEFAULT_PERMISSIONS,
+    Bendahara: DEFAULT_PERMISSIONS
+  });
 
-  // Real-time listener untuk Settings/HakAkses dari Firebase RTDB
+  // Real-time listener untuk Settings/HakAksesRole dari Firebase RTDB
   useEffect(() => {
-    const hakAksesRef = ref(db, 'Settings/HakAkses');
+    const hakAksesRef = ref(db, 'Settings/HakAksesRole');
     const unsub = onValue(hakAksesRef, (snapshot) => {
       if (snapshot.exists()) {
-        setPermissions({ ...DEFAULT_PERMISSIONS, ...snapshot.val() });
+        const data = snapshot.val();
+        setPermissions({
+          Kasir: { ...DEFAULT_PERMISSIONS, ...(data.Kasir || {}) },
+          Bendahara: { ...DEFAULT_PERMISSIONS, ...(data.Bendahara || {}) }
+        });
       } else {
-        setPermissions(DEFAULT_PERMISSIONS);
+        setPermissions({
+          Kasir: DEFAULT_PERMISSIONS,
+          Bendahara: DEFAULT_PERMISSIONS
+        });
       }
     });
     return () => unsub();
@@ -87,20 +99,22 @@ export const AuthProvider = ({ children }) => {
   /**
    * Cek apakah user berhak mengakses menu tertentu.
    * Admin selalu mendapat izin (true).
-   * Kasir bergantung pada toggle ON/OFF di permissions.
+   * Kasir dan Bendahara bergantung pada toggle ON/OFF di permissions.
    */
   const hasPermission = (menuKey) => {
     if (!user) return false;
     if (isAdmin) return true;
-    return Boolean(permissions[menuKey]);
+    const role = user.role;
+    if (!permissions[role]) return false;
+    return Boolean(permissions[role][menuKey]);
   };
 
   /**
-   * Update status toggle Hak Akses di Firebase RTDB
+   * Update status toggle Hak Akses di Firebase RTDB berdasarkan role
    */
-  const updatePermission = async (menuKey, value) => {
+  const updatePermission = async (role, menuKey, value) => {
     try {
-      await set(ref(db, `Settings/HakAkses/${menuKey}`), value);
+      await set(ref(db, `Settings/HakAksesRole/${role}/${menuKey}`), value);
       return { success: true };
     } catch (err) {
       console.error('Update permission error:', err);

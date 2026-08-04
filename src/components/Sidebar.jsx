@@ -23,6 +23,9 @@ export default function Sidebar({ isOpen, toggleSidebar, isCollapsed, toggleColl
   const canSeeMasterPrint = hasPermission('masterPrint');
   const canSeeMasterWa = hasPermission('masterWa');
   const canSeeRiwayatImport = hasPermission('riwayatImport');
+  
+  const canSeeLapPendapatan = hasPermission('lapPendapatan');
+  const canSeeLppkp = hasPermission('lppkp');
 
   const showSettingsSection = isAdmin || canSeeMasterTtd || canSeeMasterUser || canSeeMasterPrint || canSeeMasterWa || canSeeRiwayatImport;
 
@@ -94,29 +97,35 @@ export default function Sidebar({ isOpen, toggleSidebar, isCollapsed, toggleColl
             <span className="nav-item-text">Transaksi</span>
           </NavLink>
 
-          <div className="menu-section">
-            <span className="menu-section-text">Reporting</span>
-          </div>
+          {(canSeeLapPendapatan || canSeeLppkp) && (
+            <div className="menu-section">
+              <span className="menu-section-text">Reporting</span>
+            </div>
+          )}
 
-          <NavLink
-            to="/laporan"
-            className={({ isActive }) => `nav-item-custom ${isActive ? 'active' : ''}`}
-            onClick={handleNavClick}
-            title={isCollapsed ? "Lap. Pendapatan" : undefined}
-          >
-            <i className="fa-solid fa-file-invoice-dollar flex-shrink-0" style={{ color: '#34d399' }}></i>
-            <span className="nav-item-text">Lap. Pendapatan</span>
-          </NavLink>
+          {canSeeLapPendapatan && (
+            <NavLink
+              to="/laporan"
+              className={({ isActive }) => `nav-item-custom ${isActive ? 'active' : ''}`}
+              onClick={handleNavClick}
+              title={isCollapsed ? "Lap. Pendapatan" : undefined}
+            >
+              <i className="fa-solid fa-file-invoice-dollar flex-shrink-0" style={{ color: '#34d399' }}></i>
+              <span className="nav-item-text">Lap. Pendapatan</span>
+            </NavLink>
+          )}
 
-          <NavLink
-            to="/lppkp"
-            className={({ isActive }) => `nav-item-custom ${isActive ? 'active' : ''}`}
-            onClick={handleNavClick}
-            title={isCollapsed ? "LPPKP" : undefined}
-          >
-            <i className="fa-solid fa-file-contract flex-shrink-0" style={{ color: '#c084fc' }}></i>
-            <span className="nav-item-text">LPPKP</span>
-          </NavLink>
+          {canSeeLppkp && (
+            <NavLink
+              to="/lppkp"
+              className={({ isActive }) => `nav-item-custom ${isActive ? 'active' : ''}`}
+              onClick={handleNavClick}
+              title={isCollapsed ? "LPPKP" : undefined}
+            >
+              <i className="fa-solid fa-file-contract flex-shrink-0" style={{ color: '#c084fc' }}></i>
+              <span className="nav-item-text">LPPKP</span>
+            </NavLink>
+          )}
 
           {showSettingsSection && (
             <div>
