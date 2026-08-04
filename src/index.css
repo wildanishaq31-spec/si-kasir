@@ -1,0 +1,674 @@
+:root {
+  /* updated color */
+  --primary: #305746;
+  --primary-hover: #2C393B;
+  --sidebar-bg: linear-gradient(135deg, #18985c 0%, #117849 100%);
+  --sidebar-text: #ffffff;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.2);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.35);
+  --sidebar-active-text: #ffffff;
+  --body-bg: #F0F4EC;
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--body-bg);
+  font-family: var(--font-family);
+  color: #1f2937;
+  overflow-x: hidden;
+  margin: 0;
+}
+
+/* ============================================================
+   SWEETALERT2 TOAST CUSTOM STYLING (Top-Right Flasher Style)
+   ============================================================ */
+.swal2-container.swal2-top-end {
+  top: 15px !important;
+  right: 15px !important;
+}
+
+.swal2-popup.swal2-toast.colored-toast {
+  padding: 12px 18px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06) !important;
+  backdrop-filter: blur(10px);
+}
+
+.swal2-toast .swal2-title {
+  font-size: 0.92rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+.swal2-toast .swal2-html-container {
+  font-size: 0.82rem !important;
+  margin: 4px 0 0 0 !important;
+  color: #4b5563 !important;
+}
+
+.swal2-toast .swal2-timer-progress-bar {
+  height: 3px !important;
+}
+
+.card {
+  border: none;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover {
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+
+.thead-gradient {
+  background: var(--sidebar-bg) !important;
+}
+
+.thead-gradient th {
+  background: transparent !important;
+  color: var(--sidebar-text) !important;
+  border: none !important;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* Custom Pagination Colors */
+.pagination {
+  --bs-pagination-color: var(--primary);
+  --bs-pagination-active-bg: var(--primary);
+  --bs-pagination-active-border-color: var(--primary);
+  --bs-pagination-hover-color: var(--primary-hover);
+  --bs-pagination-focus-color: var(--primary-hover);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem rgba(48, 87, 70, 0.25);
+}
+
+.btn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn:active {
+  transform: scale(0.97) !important;
+}
+
+/* Smooth Page Load Animation */
+@keyframes fadeInPage {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.page-transition-wrapper {
+  animation: fadeInPage 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+.modal-content {
+  animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary);
+}
+
+.upload-dropzone {
+  background-color: #f4f5ff;
+  border: 2px dashed #a5b4fc;
+  border-radius: 1rem;
+  padding: 2.5rem 1.5rem;
+  max-width: 520px;
+  margin: 0 auto;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+}
+
+.upload-dropzone:hover {
+  background-color: #eef2ff;
+  border-color: #6366f1;
+  box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.15);
+  transform: translateY(-2px);
+}
+
+.upload-dropzone.dragging {
+  background-color: #e0e7ff !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.25) !important;
+  transform: scale(1.02);
+}
+
+.table > :not(caption) > * > * {
+  padding: 12px 16px;
+  border-bottom-color: #e5e7eb;
+}
+
+.table thead th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Layout */
+.app-wrapper {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+.sidebar {
+  position: relative;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1050;
+  padding: 1.5rem 1rem;
+}
+
+/* Sidebar Toggle Collapse Button (< >) */
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 22px;
+  right: -13px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #117849;
+  z-index: 1060;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  font-size: 0.72rem;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #f3f4f6;
+  color: #18985c;
+  transform: scale(1.18);
+}
+
+/* Collapsed Mode (Desktop Mini Sidebar) */
+@media (min-width: 993px) {
+  .sidebar.collapsed {
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+    padding: 1.5rem 0.5rem;
+  }
+
+  .sidebar.collapsed .brand-title-wrapper,
+  .sidebar.collapsed .nav-item-text,
+  .sidebar.collapsed .sidebar-user-text,
+  .sidebar.collapsed .sidebar-user-logout-icon {
+    display: none !important;
+  }
+
+  .sidebar.collapsed .sidebar-brand {
+    justify-content: center;
+    padding: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .sidebar.collapsed .menu-section {
+    text-align: center;
+    padding: 0.75rem 0 0.25rem;
+    font-size: 0.65rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin-top: 0.25rem;
+  }
+
+  .sidebar.collapsed .menu-section-text {
+    display: none;
+  }
+
+  .sidebar.collapsed .nav-item-custom {
+    justify-content: center;
+    padding: 10px 0;
+    gap: 0;
+  }
+
+  .sidebar.collapsed .nav-item-custom i {
+    font-size: 1.25rem;
+  }
+
+  .sidebar.collapsed .sidebar-user {
+    justify-content: center;
+    padding: 0.6rem 0;
+  }
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+  padding: 0 12px;
+  color: var(--sidebar-active-text);
+}
+
+.brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary), #818cf8);
+  background: white;
+  color: var(--primary);
+  border-radius: 10px;
+}
+
+.menu-section {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 1.5rem 12px 0.5rem;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.nav-item-custom {
+  padding: 10px 14px;
+  margin-bottom: 4px;
+  color: var(--sidebar-text);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s all;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.nav-item-custom:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-active-text);
+}
+
+.nav-item-custom.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+}
+
+.nav-item-custom i {
+  font-size: 1.15rem;
+  width: 24px;
+  text-align: center;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.nav-item-custom:hover i {
+  transform: scale(1.15);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)) brightness(1.15);
+}
+
+.sidebar-user {
+  margin-top: auto;
+  padding: 1rem;
+  background: var(--sidebar-hover-bg);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.sidebar-user:hover {
+  background: var(--sidebar-hover-bg);
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.main-content {
+  flex: 1 1 0%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--body-bg);
+}
+
+.topbar {
+  min-height: 76px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.content-area {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.icon-box-success { background: #dcfce7; color: #16a34a; }
+.icon-box-primary { background: #e0e7ff; color: #4f46e5; }
+.icon-box-warning { background: #fef9c3; color: #ca8a04; }
+
+.login-wrapper {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(2px);
+  z-index: 1040;
+  transition: opacity 0.3s;
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -290px;
+    width: 270px;
+    min-width: 270px;
+    max-width: 270px;
+    height: 100%;
+    z-index: 1050;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+  }
+
+  .content-area {
+    padding: 1.25rem 0.85rem;
+  }
+
+  .topbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .topbar h5 {
+    font-size: 1.05rem;
+  }
+
+  /* Touch scrolling optimization for Android devices */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .btn {
+    padding: 0.5rem 0.9rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-bg-gray {
+    background-color: #d9d9d9 !important;
+  }
+  .print-bg-yellow {
+    background-color: #ffff99 !important;
+  }
+  .print-bg-white {
+    background-color: #ffffff !important;
+  }
+  .print-no-grid {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  .print-no-grid:last-child {
+    border-right: 1px solid #555 !important;
+  }
+  .print-red-border {
+    border-bottom: 1px solid red !important;
+  }
+
+  @page {
+    size: 215mm 330mm portrait;
+    margin: 10mm;
+  }
+
+  body, html, .app-wrapper, .main-content, .content-area {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  .sidebar,
+  .topbar,
+  .sidebar-overlay,
+  .no-print {
+    display: none !important;
+  }
+
+  /* ── Mode 1: Print LPPKP (Default) ── */
+  body:not(.printing-kwitansi):not(.printing-realisasi) .kwitansi-print-container,
+  body:not(.printing-kwitansi):not(.printing-realisasi) .realisasi-print-container {
+    display: none !important;
+  }
+
+  body:not(.printing-kwitansi):not(.printing-realisasi) #lppkp-print-area {
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    background: transparent !important;
+    zoom: 77%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    zoom: 77%;
+      -webkit-print-color-adjust: exact;
+      width: 100% !important;
+      zoom: 77%;
+      -webkit-print-color-adjust: exact;
+    }
+
+  body:not(.printing-kwitansi):not(.printing-realisasi) #lppkp-print-area .card-body {
+    padding: 0 !important;
+  }
+
+  body:not(.printing-kwitansi):not(.printing-realisasi) #lppkp-print-area table td, 
+  body:not(.printing-kwitansi):not(.printing-realisasi) #lppkp-print-area table th {
+    padding: 2px 4px !important;
+  }
+
+  
+
+  /* ── Mode 2: Print Kwitansi ── */
+  body.printing-kwitansi #lppkp-print-area,
+  body.printing-kwitansi .realisasi-print-container,
+  body.printing-kwitansi .modal-header,
+  body.printing-kwitansi .modal-footer,
+  body.printing-kwitansi .modal-backdrop {
+    display: none !important;
+  }
+
+  body.printing-kwitansi .modal {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.printing-kwitansi .modal-dialog {
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  body.printing-kwitansi .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  body.printing-kwitansi .modal-body {
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  body.printing-kwitansi .kwitansi-print-container {
+    display: block !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    zoom: 92%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  
+
+  /* ── Mode 3: Print Realisasi ── */
+  body.printing-realisasi #lppkp-print-area,
+  body.printing-realisasi .kwitansi-print-container,
+  body.printing-realisasi .modal-header,
+  body.printing-realisasi .modal-footer,
+  body.printing-realisasi .modal-backdrop {
+    display: none !important;
+  }
+
+  body.printing-realisasi .modal {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.printing-realisasi .modal-dialog {
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  body.printing-realisasi .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  body.printing-realisasi .modal-body {
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  body.printing-realisasi .realisasi-print-container {
+    display: block !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    zoom: 75%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  
+}
+
+
+
