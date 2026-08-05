@@ -18,6 +18,14 @@ export default function Login() {
 
   const isAuthConfigured = isFirebaseAuthConfigured();
 
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('si_kasir_remembered_username');
+    if (savedUsername) {
+      setUsername(savedUsername);
+      setRememberMe(true);
+    }
+  }, []);
+
   // Cek jika pengguna diarahkan karena sesi login kadaluarsa
   useEffect(() => {
     const isExpired = localStorage.getItem('si_kasir_session_expired');
@@ -48,6 +56,11 @@ export default function Login() {
     setLoading(false);
 
     if (res.success) {
+      if (rememberMe) {
+        localStorage.setItem('si_kasir_remembered_username', username);
+      } else {
+        localStorage.removeItem('si_kasir_remembered_username');
+      }
       login(res.user, rememberMe);
       navigate('/');
     } else {

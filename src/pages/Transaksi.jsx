@@ -261,7 +261,6 @@ export default function Transaksi() {
             >
               <i className="fa-solid fa-calendar-alt me-1"></i> Edit Tanggal Masal
             </button>
-            {isAdmin && (
               <button
                 className="btn btn-danger shadow-sm rounded-pill fw-bold btn-sm px-3"
                 onClick={handleBatchDelete}
@@ -269,7 +268,6 @@ export default function Transaksi() {
               >
                 <i className="fa-solid fa-trash me-1"></i> Hapus Masal ({selectedIds.length})
               </button>
-            )}
             <button
               className="btn btn-outline-secondary rounded-pill btn-sm ms-1"
               onClick={() => setSelectedIds([])}
@@ -300,7 +298,7 @@ export default function Transaksi() {
                 <th>Pasien</th>
                 <th>Layanan</th>
                 <th className="text-end">Total Bayar</th>
-                {isAdmin && <th className="text-center pe-4">Aksi</th>}
+                <th className="text-center pe-4">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -338,7 +336,6 @@ export default function Transaksi() {
                       </td>
                       <td style={{ maxWidth: '200px' }} className="text-wrap text-break">{t.NamaPelayanan || '-'}</td>
                       <td className="text-end fw-bold text-success">{formatRupiah(t.TotalBayar)}</td>
-                      {isAdmin && (
                         <td className="text-center pe-4">
                           <button
                             className="btn btn-sm btn-outline-warning border-0 rounded-circle me-1"
@@ -359,7 +356,6 @@ export default function Transaksi() {
                             <i className="fa-solid fa-trash"></i>
                           </button>
                         </td>
-                      )}
                     </tr>
                   );
                 })
