@@ -99,26 +99,46 @@ export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []
 
     packagesMap.set(pkgId, packageEntry);
 
+    // Map ID asli & ID terkategori (misal 0034 & 34)
     ids.forEach(id => {
       idToPackageMap.set(id, pkgId);
       idToPackageMap.set(normalizeId(id), pkgId);
     });
 
+    // Map Nama Item dari input user
     names.forEach(name => {
       nameToPackageMap.set(normalizeText(name), pkgId);
       nameToPackageMap.set(normalizeText(cleanPrefix(name)), pkgId);
     });
 
-    // Automated fallback matching for common package names
+    // Map Nama Paket itu sendiri sebagai pencari
+    nameToPackageMap.set(normalizeText(pkgName), pkgId);
+    nameToPackageMap.set(normalizeText(cleanPrefix(pkgName)), pkgId);
+
+    // Dynamic Automatic Fallbacks berdasarkan ID atau Nama Paket
     const upperPkg = pkgName.toUpperCase();
-    if (upperPkg.includes('DL') || upperPkg.includes('DARAH LENGKAP')) {
+    const idsUpper = ids.map(x => String(x).toUpperCase());
+    const idsNorm = ids.map(x => normalizeId(x));
+
+    // Flebotomi / Pengambilan Darah Vena (ID 0034 / 34)
+    if (upperPkg.includes('FLEBOTOMI') || idsUpper.includes('0034') || idsNorm.includes('34')) {
+      nameToPackageMap.set('PENGAMBILAN DARAH VENA', pkgId);
+      nameToPackageMap.set('PENGAMBILAN DARAH', pkgId);
+      nameToPackageMap.set('FLEBOTOMI', pkgId);
+    }
+    // Darah Lengkap (DL)
+    if (upperPkg.includes('DL') || upperPkg.includes('DARAH LENGKAP') || idsUpper.includes('BPJS006') || idsUpper.includes('20250066')) {
       nameToPackageMap.set('HEMATOLOGI', pkgId);
       nameToPackageMap.set('DARAH LENGKAP', pkgId);
-    } else if (upperPkg.includes('WIDAL')) {
+    }
+    // Widal / Imunologi
+    if (upperPkg.includes('WIDAL') || idsUpper.includes('0025') || idsUpper.includes('20260060')) {
       nameToPackageMap.set('WIDAL', pkgId);
       nameToPackageMap.set('PEMERIKSAAN IMUNOLOGI - PERDA', pkgId);
       nameToPackageMap.set('IMUNOLOGI', pkgId);
-    } else if (upperPkg.includes('UL') || upperPkg.includes('URINE LENGKAP')) {
+    }
+    // Urine Lengkap (UL)
+    if (upperPkg.includes('UL') || upperPkg.includes('URINE LENGKAP')) {
       nameToPackageMap.set('URINE LENGKAP', pkgId);
       nameToPackageMap.set('URINE', pkgId);
     }
@@ -135,21 +155,21 @@ export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []
 
     let matchedPkgId = null;
 
-    // 1. Match via labId
+    // 1. Match via labId (exact atau normalized ID seperti 0034 vs 34)
     if (itemLabId && idToPackageMap.has(itemLabId)) {
       matchedPkgId = idToPackageMap.get(itemLabId);
     } else if (itemLabIdNorm && idToPackageMap.has(itemLabIdNorm)) {
       matchedPkgId = idToPackageMap.get(itemLabIdNorm);
     }
-    // 2. Match via clean item name
+    // 2. Match via exact clean item name
     else if (itemNamaClean && nameToPackageMap.has(normalizeText(itemNamaClean))) {
       matchedPkgId = nameToPackageMap.get(normalizeText(itemNamaClean));
     }
-    // 3. Partial match for lab item names
+    // 3. Substring match for lab item names
     else if (itemNamaClean) {
       const upperClean = normalizeText(itemNamaClean);
       for (const [nameKey, pkgId] of nameToPackageMap.entries()) {
-        if (upperClean.includes(nameKey) || nameKey.includes(upperClean)) {
+        if (nameKey && (upperClean.includes(nameKey) || nameKey.includes(upperClean))) {
           matchedPkgId = pkgId;
           break;
         }
