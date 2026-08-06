@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getFirebaseDataAsArray, logAudit, getLastLppkpNumber, saveLastLppkpNumber } from '../services/firebase';
+import { getFirebaseDataAsArray, logAudit, getLastLppkpNumber, saveLastLppkpNumber, getLppkpMapping, saveLppkpMapping } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { determineKlaster } from '../utils/klasterHelper';
 import logoBondowosoImg from '../assets/logo_bondowoso.jpg';
@@ -324,6 +324,121 @@ const RealisasiDocument = ({ tanggalLabel, activeYear, noLPPKP, k2_jumlah, k3_ju
   </div>
 );
 
+// ─── LPPKP Chronological Mapping Helpers ─────────────────────────────────────
+function normalizeDateToIso(dateStr) {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{2}-\d{2}-\d{4}$/.test(str)) {
+    const [d, m, y] = str.split('-');
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  return str;
+}
+
+function computeAllDailyTotals(transactions) {
+  const map = {};
+  transactions.forEach(t => {
+    if (!t.Tanggal) return;
+    const isoDate = normalizeDateToIso(t.Tanggal);
+    if (!isoDate) return;
+
+    let retribusi = 0;
+    let peresepan = 0;
+    let tindakanBiaya = 0;
+
+    const items = t.TindakanList || [];
+    if (items.length > 0) {
+      items.forEach(it => {
+        const nameUpper = (it.nama || '').toUpperCase();
+        const cost = Number(it.biaya) || 0;
+        if (nameUpper.includes('RESEP') || nameUpper.includes('FARMA') || nameUpper.includes('OBAT')) {
+          peresepan += cost;
+        } else if (nameUpper.includes('RAWAT INAP')) {
+          retribusi += Math.round(cost / TARIF.k5_rawatInap) * TARIF.k5_rawatInap;
+        } else if (nameUpper.includes('UGD') && nameUpper.includes('PEMERIKSAAN')) {
+          retribusi += Math.round(cost / TARIF.k5_ugd) * TARIF.k5_ugd;
+        } else if (nameUpper.includes('RUJUKAN')) {
+          retribusi += cost;
+        } else if (isLaboratAction(nameUpper)) {
+          tindakanBiaya += cost;
+        } else if (nameUpper.includes('PEMERIKSAAN') || nameUpper.includes('RETRIBUSI') || nameUpper.includes('SKD')) {
+          retribusi += cost;
+        } else {
+          tindakanBiaya += cost;
+        }
+      });
+    } else {
+      const total = Number(t.TotalBayar) || Number(t.Tarif) || 0;
+      tindakanBiaya += total;
+    }
+
+    map[isoDate] = (map[isoDate] || 0) + retribusi + peresepan + tindakanBiaya;
+  });
+  return map;
+}
+
+function generateChronologicalLppkpMapping(allTransactions, existingMapping = {}, lastSavedNum = 172) {
+  const dailyTotals = computeAllDailyTotals(allTransactions);
+
+  // Dapatkan semua tanggal unik yang memiliki transaksi & total > 0
+  const activeDates = Object.keys(dailyTotals)
+    .filter(dateIso => dailyTotals[dateIso] > 0)
+    .sort(); // Urutkan kronologis ascending (YYYY-MM-DD)
+
+  if (activeDates.length === 0) return { mapping: {}, dailyTotals, activeDates: [] };
+
+  const newMapping = { ...existingMapping };
+
+  // Cari tanggal jangkar pertama yang sudah punya nomor di existingMapping
+  let anchorIndex = -1;
+  let anchorNumber = null;
+
+  for (let i = 0; i < activeDates.length; i++) {
+    const d = activeDates[i];
+    if (newMapping[d] !== undefined && newMapping[d] !== null && Number(newMapping[d]) > 0) {
+      anchorIndex = i;
+      anchorNumber = Number(newMapping[d]);
+      break;
+    }
+  }
+
+  // Jika belum ada jangkar di mapping, tentukan jangkar pada tanggal aktif pertama
+  if (anchorIndex === -1) {
+    const base = Number(lastSavedNum) > 0 ? Number(lastSavedNum) : 172;
+    anchorIndex = 0;
+    anchorNumber = base;
+    newMapping[activeDates[0]] = base;
+  }
+
+  // Jalankan penomoran urut ke depan & ke belakang dari jangkar
+  // 1. Ke depan (masa sesudah jangkar)
+  let currentNum = Number(newMapping[activeDates[anchorIndex]]);
+  for (let i = anchorIndex + 1; i < activeDates.length; i++) {
+    const d = activeDates[i];
+    if (newMapping[d] !== undefined && newMapping[d] !== null && Number(newMapping[d]) > 0) {
+      currentNum = Number(newMapping[d]);
+    } else {
+      currentNum += 1;
+      newMapping[d] = currentNum;
+    }
+  }
+
+  // 2. Ke belakang (masa sebelum jangkar)
+  let backNum = Number(newMapping[activeDates[anchorIndex]]);
+  for (let i = anchorIndex - 1; i >= 0; i--) {
+    const d = activeDates[i];
+    if (newMapping[d] !== undefined && newMapping[d] !== null && Number(newMapping[d]) > 0) {
+      backNum = Number(newMapping[d]);
+    } else {
+      backNum = Math.max(1, backNum - 1);
+      newMapping[d] = backNum;
+    }
+  }
+
+  return { mapping: newMapping, dailyTotals, activeDates };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function LPPKP() {
   const { user } = useAuth();
@@ -336,6 +451,8 @@ export default function LPPKP() {
   const [manualNoInput,      setManualNoInput]      = useState('');
   const [autoSaveLppkp,      setAutoSaveLppkp]      = useState(true);
   const [lastLppkpInfo,      setLastLppkpInfo]      = useState(null);
+  const [lppkpMapping,       setLppkpMapping]       = useState({});
+  const [allTransactions,    setAllTransactions]    = useState([]);
   const [loading,            setLoading]            = useState(false);
   const [showKwitansiModal,  setShowKwitansiModal]  = useState(false);
   const [showRealisasiModal, setShowRealisasiModal] = useState(false);
@@ -365,6 +482,33 @@ export default function LPPKP() {
   const ttdKepala = getTtd('kepala');
   const ttdPembantu = getTtd('pembantu');
   const ttdDinkes = getTtd('dinas');
+
+  const syncChronologicalLppkp = useCallback(async (transactionsList, userManualMap = {}) => {
+    try {
+      const savedMapping = await getLppkpMapping();
+      const lastSavedNum = await getLastLppkpNumber();
+
+      const mergedMap = { ...savedMapping, ...userManualMap };
+      const { mapping: updatedMapping } = generateChronologicalLppkpMapping(
+        transactionsList,
+        mergedMap,
+        lastSavedNum || 172
+      );
+
+      setLppkpMapping(updatedMapping);
+
+      const validNums = Object.values(updatedMapping).map(Number).filter(n => !isNaN(n) && n > 0);
+      const maxNum = validNums.length > 0 ? Math.max(...validNums) : (lastSavedNum || 172);
+
+      setLastLppkpInfo(maxNum);
+      await saveLppkpMapping(updatedMapping);
+      await saveLastLppkpNumber(maxNum);
+      return updatedMapping;
+    } catch (err) {
+      console.error('Error syncing LPPKP mapping:', err);
+      return {};
+    }
+  }, []);
 
   const saveLppkpIfChecked = (targetNo) => {
     const numberToSave = targetNo || noLPPKP;
@@ -413,6 +557,10 @@ export default function LPPKP() {
       const all = await getFirebaseDataAsArray('Transaksi');
       const loadedTtd = await getFirebaseDataAsArray('MasterTtd');
       setTtdList(loadedTtd);
+      setAllTransactions(all);
+
+      // Hitung dan sinkronkan penomoran LPPKP kronologis untuk semua tanggal aktif
+      await syncChronologicalLppkp(all);
 
       const filterDateDmy = filterDate ? filterDate.split('-').reverse().join('-') : '';
       const filterMonthMmyyyy = filterMonth ? `${filterMonth.split('-')[1]}-${filterMonth.split('-')[0]}` : '';
@@ -539,7 +687,7 @@ export default function LPPKP() {
       console.error(err);
       setLoading(false);
     }
-  }, [filterMode, filterDate, filterMonth]);
+  }, [filterMode, filterDate, filterMonth, syncChronologicalLppkp]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -552,17 +700,14 @@ export default function LPPKP() {
     fetchLastLppkp();
   }, []);
 
-  const handleNoChange = (v) => {
+  const handleNoChange = async (v) => {
     setManualNoInput(v);
     setNoLPPKP(v);
-    if (v) {
-      localStorage.setItem('lppkp_nomor', v);
-      // Jika user memasukkan nomor manual valid, simpan ke Firebase untuk konsistensi
-      const num = Number(v);
-      if (!isNaN(num) && num > 0) {
-        saveLastLppkpNumber(num);
-        setLastLppkpInfo(num);
-      }
+    const num = Number(v);
+    if (!isNaN(num) && num > 0) {
+      const currentIso = normalizeDateToIso(filterDate);
+      const updatedUserMap = { ...lppkpMapping, [currentIso]: num };
+      await syncChronologicalLppkp(allTransactions, updatedUserMap);
     }
   };
 
@@ -591,19 +736,23 @@ export default function LPPKP() {
   const total_t_k5 = counts.t_ugd + counts.t_rawatInap + counts.t_gigi + counts.t_laborat + counts.t_persalinan + counts.t_peresepan + counts.t_rujukan + counts.t_lainLain;
   const grandTotal = k2_jumlah + k3_jumlah + k4_jumlah + k5_jumlah + total_t_k2 + total_t_k3 + total_t_k5;
 
-  // Otomatis tentukan No LPPKP jika Total > 0, dan kosongkan jika Total = 0
+  const currentIsoDate = normalizeDateToIso(filterDate);
+
+  // Otomatis tentukan No LPPKP kronologis jika Total > 0, dan kosongkan jika Total = 0
   useEffect(() => {
     if (grandTotal > 0) {
       if (manualNoInput) {
         setNoLPPKP(manualNoInput);
+      } else if (lppkpMapping[currentIsoDate]) {
+        setNoLPPKP(String(lppkpMapping[currentIsoDate]));
       } else {
-        const nextNum = (lastLppkpInfo !== null && lastLppkpInfo !== undefined) ? (Number(lastLppkpInfo) + 1) : 1;
+        const nextNum = (lastLppkpInfo !== null && lastLppkpInfo !== undefined) ? (Number(lastLppkpInfo) + 1) : 173;
         setNoLPPKP(String(nextNum));
       }
     } else {
       setNoLPPKP('');
     }
-  }, [grandTotal, lastLppkpInfo, manualNoInput]);
+  }, [grandTotal, currentIsoDate, lppkpMapping, lastLppkpInfo, manualNoInput]);
 
   // Reset manual input saat mengganti tanggal / periode filter
   useEffect(() => {

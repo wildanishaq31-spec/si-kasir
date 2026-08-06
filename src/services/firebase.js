@@ -745,3 +745,30 @@ export async function saveLastLppkpNumber(number) {
     console.error('Error saving last LPPKP number:', error);
   }
 }
+
+// Get LPPKP date-to-number mapping object from Settings
+export async function getLppkpMapping() {
+  try {
+    const dbRef = ref(db, 'Settings/LppkpMapping');
+    const snapshot = await get(dbRef);
+    if (snapshot.exists()) {
+      return snapshot.val() || {};
+    }
+    return {};
+  } catch (error) {
+    console.error('Error fetching LPPKP mapping:', error);
+    return {};
+  }
+}
+
+// Save LPPKP date-to-number mapping object to Settings
+export async function saveLppkpMapping(mapping) {
+  try {
+    if (mapping && typeof mapping === 'object') {
+      const dbRef = ref(db, 'Settings/LppkpMapping');
+      await set(dbRef, mapping);
+    }
+  } catch (error) {
+    console.error('Error saving LPPKP mapping:', error);
+  }
+}
