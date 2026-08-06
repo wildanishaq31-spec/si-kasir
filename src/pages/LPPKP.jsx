@@ -332,7 +332,8 @@ export default function LPPKP() {
   const [filterMode,         setFilterMode]         = useState('date');
   const [filterDate,         setFilterDate]         = useState(todayStr);
   const [filterMonth,        setFilterMonth]        = useState(todayStr.substring(0, 7));
-  const [noLPPKP,            setNoLPPKP]            = useState(() => localStorage.getItem('lppkp_nomor') || '');
+  const [noLPPKP,            setNoLPPKP]            = useState('');
+  const [manualNoInput,      setManualNoInput]      = useState('');
   const [autoSaveLppkp,      setAutoSaveLppkp]      = useState(true);
   const [lastLppkpInfo,      setLastLppkpInfo]      = useState(null);
   const [loading,            setLoading]            = useState(false);
@@ -365,10 +366,15 @@ export default function LPPKP() {
   const ttdPembantu = getTtd('pembantu');
   const ttdDinkes = getTtd('dinas');
 
-  const saveLppkpIfChecked = () => {
-    if (autoSaveLppkp && noLPPKP) {
-      saveLastLppkpNumber(noLPPKP);
-      setLastLppkpInfo(Number(noLPPKP));
+  const saveLppkpIfChecked = (targetNo) => {
+    const numberToSave = targetNo || noLPPKP;
+    if (autoSaveLppkp && numberToSave) {
+      const num = Number(numberToSave);
+      if (!isNaN(num) && num > 0) {
+        saveLastLppkpNumber(num);
+        setLastLppkpInfo(num);
+        localStorage.setItem('lppkp_nomor', String(num));
+      }
     }
   };
 
@@ -540,24 +546,24 @@ export default function LPPKP() {
   const fetchLastLppkp = async () => {
     const lastNum = await getLastLppkpNumber();
     setLastLppkpInfo(lastNum);
-    
-    // Jika input masih kosong ATAU sama dengan nilai default sebelumnya, 
-    // kita sarankan nomor baru
-    if (!noLPPKP || localStorage.getItem('lppkp_nomor') === noLPPKP) {
-      const nextNum = (lastNum || 0) + 1;
-      setNoLPPKP(String(nextNum));
-      localStorage.setItem('lppkp_nomor', String(nextNum));
-    }
   };
 
   useEffect(() => {
     fetchLastLppkp();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleNoChange = (v) => {
+    setManualNoInput(v);
     setNoLPPKP(v);
-    localStorage.setItem('lppkp_nomor', v);
+    if (v) {
+      localStorage.setItem('lppkp_nomor', v);
+      // Jika user memasukkan nomor manual valid, simpan ke Firebase untuk konsistensi
+      const num = Number(v);
+      if (!isNaN(num) && num > 0) {
+        saveLastLppkpNumber(num);
+        setLastLppkpInfo(num);
+      }
+    }
   };
 
   // ─── Kalkulasi ───────────────────────────────────────────────────────────────
@@ -584,6 +590,25 @@ export default function LPPKP() {
   const total_t_k3 = counts.t_k3;
   const total_t_k5 = counts.t_ugd + counts.t_rawatInap + counts.t_gigi + counts.t_laborat + counts.t_persalinan + counts.t_peresepan + counts.t_rujukan + counts.t_lainLain;
   const grandTotal = k2_jumlah + k3_jumlah + k4_jumlah + k5_jumlah + total_t_k2 + total_t_k3 + total_t_k5;
+
+  // Otomatis tentukan No LPPKP jika Total > 0, dan kosongkan jika Total = 0
+  useEffect(() => {
+    if (grandTotal > 0) {
+      if (manualNoInput) {
+        setNoLPPKP(manualNoInput);
+      } else {
+        const nextNum = (lastLppkpInfo !== null && lastLppkpInfo !== undefined) ? (Number(lastLppkpInfo) + 1) : 1;
+        setNoLPPKP(String(nextNum));
+      }
+    } else {
+      setNoLPPKP('');
+    }
+  }, [grandTotal, lastLppkpInfo, manualNoInput]);
+
+  // Reset manual input saat mengganti tanggal / periode filter
+  useEffect(() => {
+    setManualNoInput('');
+  }, [filterDate, filterMonth, filterMode]);
 
   // ─── Row Builders ─────────────────────────────────────────────────────────────
   const SectionHeader = ({ label }) => (
@@ -695,10 +720,11 @@ export default function LPPKP() {
               <div className="input-group">
                 <input
                   type="text"
-                  className="form-control"
-                  value={noLPPKP}
+                  className={`form-control ${grandTotal === 0 ? 'bg-light text-muted' : ''}`}
+                  value={grandTotal > 0 ? noLPPKP : ''}
                   onChange={(e) => handleNoChange(e.target.value)}
-                  placeholder="Contoh: 157"
+                  placeholder={grandTotal > 0 ? "Otomatis..." : "Tidak Ada Total (Rp 0)"}
+                  disabled={grandTotal === 0}
                 />
                 <button 
                   className="btn btn-outline-secondary" 
@@ -721,6 +747,11 @@ export default function LPPKP() {
                   Simpan nomor setelah cetak
                 </label>
               </div>
+              {grandTotal === 0 && (
+                <div className="text-danger mt-1" style={{ fontSize: '0.72rem' }}>
+                  <i className="fa-solid fa-circle-info me-1"></i> No LPPKP tidak diterbitkan (Total Rp 0)
+                </div>
+              )}
             </div>
             <div className="col-md-3">
               <label className="small text-muted fw-semibold mb-1">Tipe Laporan</label>
