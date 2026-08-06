@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { getFirebaseDataAsArray, deleteFirebaseItem, updateFirebaseItem, logAudit, formatDisplayDate } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessToast, showErrorToast, showWarningToast } from '../utils/toast';
+import { getConvertedLayananString } from '../utils/labHelper';
 
 export default function Transaksi() {
   const [trxList, setTrxList] = useState([]);
+  const [helperLabList, setHelperLabList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,8 +28,12 @@ export default function Transaksi() {
 
   const loadTransaksi = async () => {
     setLoading(true);
-    const data = await getFirebaseDataAsArray('Transaksi');
+    const [data, labHelpers] = await Promise.all([
+      getFirebaseDataAsArray('Transaksi'),
+      getFirebaseDataAsArray('Settings/HelperLabPaket')
+    ]);
     setTrxList(data.reverse());
+    setHelperLabList(labHelpers);
     setLoading(false);
   };
 
@@ -334,7 +340,11 @@ export default function Transaksi() {
                         <div className="fw-semibold">{t.NamaPasien || '-'}</div>
                         <div className="badge bg-secondary bg-opacity-10 text-secondary">{t.JenisPasien || 'Umum'}</div>
                       </td>
-                      <td style={{ maxWidth: '200px' }} className="text-wrap text-break">{t.NamaPelayanan || '-'}</td>
+                      <td style={{ maxWidth: '200px' }} className="text-wrap text-break">
+                        {(t.TindakanList && t.TindakanList.length > 0)
+                          ? getConvertedLayananString(t.TindakanList, helperLabList)
+                          : (t.NamaPelayanan || '-')}
+                      </td>
                       <td className="text-end fw-bold text-success">{formatRupiah(t.TotalBayar)}</td>
                         <td className="text-center pe-4">
                           <button

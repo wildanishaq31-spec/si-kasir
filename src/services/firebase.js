@@ -468,10 +468,10 @@ export async function saveImportPayload(fileName, items, username, importType = 
            if (item.TINDAKAN_LIST && item.TINDAKAN_LIST.length > 0) {
              item.TINDAKAN_LIST.forEach(t => {
                const namaLab = String(t.nama).startsWith('Lab:') ? t.nama : `Lab: ${t.nama}`;
-               newTindakanList.push({ nama: namaLab, biaya: t.biaya });
+               newTindakanList.push({ nama: namaLab, labId: t.labId || '', biaya: t.biaya });
              });
            } else {
-             newTindakanList.push({ nama: `Lab: ${tindakanStr}`, biaya: totalBayar });
+             newTindakanList.push({ nama: `Lab: ${tindakanStr}`, labId: item.labId || '', biaya: totalBayar });
            }
 
            const newTindakanStr = newTindakanList.map(x => x.nama).join(' + ');

@@ -121,6 +121,7 @@ export default function ImportData() {
 
             const nama = getVal('NAMA PASIEN', 'PASIEN');
             const rawTindakan = getVal('LABORATORIUM', 'LAB', 'TINDAKAN', 'PELAYANAN', 'PEMERIKSAAN');
+            const rawLabId = getVal('LABORATORIUM ID', 'LAB ID', 'ID LAB', 'ID LABORATORIUM');
             const totalStr = getVal('TOTAL', 'TARIF');
             const totalNum = Number(totalStr.replace(/[^0-9.-]+/g, '')) || 0;
             const tindakan = rawTindakan || (totalNum > 0 ? (importType === 'Laboratorium' ? 'Pemeriksaan Lab' : 'Pelayanan') : '');
@@ -158,7 +159,7 @@ export default function ImportData() {
             if (currentVisitKey && patientVisitsMap.has(currentVisitKey)) {
               const visit = patientVisitsMap.get(currentVisitKey);
               if (tindakan) {
-                visit.TINDAKAN_LIST.push({ nama: tindakan, biaya: totalNum });
+                visit.TINDAKAN_LIST.push({ nama: tindakan, labId: rawLabId, biaya: totalNum });
                 visit.TOTAL_BIAYA += totalNum;
               }
             }

@@ -5,6 +5,7 @@ import { ref, get } from 'firebase/database';
 import { determineKlaster } from '../utils/klasterHelper';
 import ExcelJS from 'exceljs';
 import { fetchTemplateAsBuffer } from '../services/supabase';
+import { getConvertedLayananString, formatTindakanWithHelpers } from '../utils/labHelper';
 
 export default function LaporanPendapatan() {
   const { user } = useAuth();
@@ -34,7 +35,10 @@ export default function LaporanPendapatan() {
 
   const fetchAndFilterData = useCallback(async () => {
     setLoading(true);
-    const trxData = await getFirebaseDataAsArray('Transaksi');
+    const [trxData, helperLabList] = await Promise.all([
+      getFirebaseDataAsArray('Transaksi'),
+      getFirebaseDataAsArray('Settings/HelperLabPaket')
+    ]);
 
     let sumTotal = 0;
     let sumRetribusi = 0;
@@ -129,7 +133,10 @@ export default function LaporanPendapatan() {
         nama: t.NamaPasien || '-',
         alamat: t.Alamat || '-',
         tanggal: formatTgl,
-        jenisTindakan: t.NamaPelayanan || 'Pemeriksaan Umum',
+        jenisTindakan: (t.TindakanList && t.TindakanList.length > 0)
+          ? getConvertedLayananString(t.TindakanList, helperLabList)
+          : (t.NamaPelayanan || 'Pemeriksaan Umum'),
+        rawTindakanList: t.TindakanList || [],
         klaster: klasterCode,
         retribusi: retribusi,
         peresepan: peresepan,
@@ -487,7 +494,10 @@ export default function LaporanPendapatan() {
       const snapshot = await get(templateRef);
       let templateText = snapshot.exists() ? snapshot.val().text : '📢 PENGUMUMAN\n\nBerikut daftar pasien:\n\n[DAFTAR_NAMA]\n\nTerima kasih.';
 
-      const helperData = await getFirebaseDataAsArray('Settings/HelperWaBlast');
+      const [helperData, helperLabList] = await Promise.all([
+        getFirebaseDataAsArray('Settings/HelperWaBlast'),
+        getFirebaseDataAsArray('Settings/HelperLabPaket')
+      ]);
 
       // 2. Kelompokkan data berdasarkan Klaster
       const grouped = {};
@@ -521,17 +531,9 @@ export default function LaporanPendapatan() {
       Object.keys(grouped).sort().forEach(klasterName => {
         daftarNamaText += `*Klaster ${klasterName}*\n`;
         grouped[klasterName].forEach(r => {
-          let tindakanDisplay = r.jenisTindakan || '-';
-          
-          // Apply helper abbreviations
-          if (helperData && helperData.length > 0) {
-            helperData.forEach(h => {
-              if (h.jenisTindakan && h.singkatan) {
-                // Gunakan String.replace jika tindakan aslinya mengandung string helper
-                tindakanDisplay = tindakanDisplay.replace(h.jenisTindakan, h.singkatan);
-              }
-            });
-          }
+          const rawItems = (r.rawTindakanList && r.rawTindakanList.length > 0) ? r.rawTindakanList : r.jenisTindakan;
+          let tindakanDisplay = formatTindakanWithHelpers(rawItems, helperLabList, helperData);
+          if (!tindakanDisplay) tindakanDisplay = r.jenisTindakan || '-';
 
           const tindakanInfo = tindakanDisplay.length > 50 ? tindakanDisplay.substring(0, 50) + '...' : tindakanDisplay;
           daftarNamaText += `- ${r.nama} | ${tindakanInfo} | Rp ${r.jumlah.toLocaleString('id-ID')}\n`;
