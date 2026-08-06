@@ -35,9 +35,10 @@ export default function LaporanPendapatan() {
 
   const fetchAndFilterData = useCallback(async () => {
     setLoading(true);
-    const [trxData, helperLabList] = await Promise.all([
+    const [trxData, helperLabList, helperWaList] = await Promise.all([
       getFirebaseDataAsArray('Transaksi'),
-      getFirebaseDataAsArray('Settings/HelperLabPaket')
+      getFirebaseDataAsArray('Settings/HelperLabPaket'),
+      getFirebaseDataAsArray('Settings/HelperWaBlast')
     ]);
 
     let sumTotal = 0;
@@ -133,9 +134,11 @@ export default function LaporanPendapatan() {
         nama: t.NamaPasien || '-',
         alamat: t.Alamat || '-',
         tanggal: formatTgl,
-        jenisTindakan: (t.TindakanList && t.TindakanList.length > 0)
-          ? getConvertedLayananString(t.TindakanList, helperLabList)
-          : (t.NamaPelayanan || 'Pemeriksaan Umum'),
+        jenisTindakan: formatTindakanWithHelpers(
+          (t.TindakanList && t.TindakanList.length > 0) ? t.TindakanList : (t.NamaPelayanan || ''),
+          helperLabList,
+          helperWaList
+        ) || 'Pemeriksaan Umum',
         rawTindakanList: t.TindakanList || [],
         klaster: klasterCode,
         retribusi: retribusi,

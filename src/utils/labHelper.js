@@ -1,15 +1,9 @@
 /**
- * Utility Helper untuk Konversi Laboratorium ID & Nama Tindakan
+ * Utility Helper untuk Konversi Laboratorium ID & Singkatan Tindakan
  */
 
-/**
- * Normalisasi string ID/Nama ke uppercase & trim
- */
 const normalizeText = (str) => String(str || '').trim().toUpperCase();
 
-/**
- * Memecah string koma/baris baru menjadi array string unik bersih
- */
 export function parseIdList(rawStr) {
   if (Array.isArray(rawStr)) {
     return rawStr.map(x => normalizeText(x)).filter(Boolean);
@@ -22,19 +16,41 @@ export function parseIdList(rawStr) {
 }
 
 /**
- * Mengonversi rincian tindakan pasien (TindakanList) berdasarkan aturan HelperLabPaket
- * 
- * @param {Array} tindakanList - Array of { nama, biaya, labId }
- * @param {Array} helperLabList - Array of rules { namaPaket, labIds, labNames, tipe }
- * @returns {Array} List item yang sudah dikonversi ke Paket / Standalone / Original
+ * Normalisasi item tindakan ke bentuk array of objects { nama, labId, biaya }
  */
-export function convertLabItemsToPackages(tindakanList = [], helperLabList = []) {
-  if (!Array.isArray(tindakanList) || tindakanList.length === 0) {
-    return [];
+export function normalizeTindakanInput(tindakanInput) {
+  if (!tindakanInput) return [];
+  if (Array.isArray(tindakanInput)) {
+    return tindakanInput.map(item => {
+      if (typeof item === 'string') {
+        return { nama: item.trim(), labId: '', biaya: 0 };
+      }
+      return {
+        nama: String(item.nama || item.jenisTindakan || '').trim(),
+        labId: String(item.labId || item.id || '').trim(),
+        biaya: Number(item.biaya) || 0
+      };
+    }).filter(x => x.nama);
   }
+  if (typeof tindakanInput === 'string') {
+    return tindakanInput
+      .split(/\s*\+\s*/)
+      .map(s => String(s || '').trim())
+      .filter(Boolean)
+      .map(s => ({ nama: s, labId: '', biaya: 0 }));
+  }
+  return [];
+}
+
+/**
+ * Mengonversi rincian tindakan pasien (TindakanList/String) berdasarkan aturan HelperLabPaket
+ */
+export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []) {
+  const items = normalizeTindakanInput(tindakanInput);
+  if (items.length === 0) return [];
 
   if (!Array.isArray(helperLabList) || helperLabList.length === 0) {
-    return tindakanList;
+    return items;
   }
 
   // Pre-process helperLabList
@@ -61,32 +77,50 @@ export function convertLabItemsToPackages(tindakanList = [], helperLabList = [])
 
     packagesMap.set(pkgId, packageEntry);
 
-    ids.forEach(id => {
-      idToPackageMap.set(id, pkgId);
-    });
+    ids.forEach(id => idToPackageMap.set(id, pkgId));
+    names.forEach(name => nameToPackageMap.set(name, pkgId));
 
-    names.forEach(name => {
-      nameToPackageMap.set(name, pkgId);
-    });
+    // Automated fallback matching for common package names
+    const upperPkg = pkgName.toUpperCase();
+    if (upperPkg.includes('DL') || upperPkg.includes('DARAH LENGKAP')) {
+      nameToPackageMap.set('HEMATOLOGI', pkgId);
+      nameToPackageMap.set('DARAH LENGKAP', pkgId);
+    } else if (upperPkg.includes('WIDAL')) {
+      nameToPackageMap.set('WIDAL', pkgId);
+      nameToPackageMap.set('PEMERIKSAAN IMUNOLOGI - PERDA', pkgId);
+    } else if (upperPkg.includes('UL') || upperPkg.includes('URINE LENGKAP')) {
+      nameToPackageMap.set('URINE LENGKAP', pkgId);
+      nameToPackageMap.set('URINE', pkgId);
+    }
   });
 
   const remainingItems = [];
 
-  tindakanList.forEach(item => {
+  items.forEach(item => {
     const itemNama = String(item.nama || '').trim();
-    const itemNamaClean = itemNama.replace(/^Lab:\s*/i, '');
+    const itemNamaClean = itemNama.replace(/^Lab:\s*/i, '').trim();
     const itemLabId = normalizeText(item.labId);
     const itemBiaya = Number(item.biaya) || 0;
 
     let matchedPkgId = null;
 
-    // 1. Coba match via labId
+    // 1. Match via labId
     if (itemLabId && idToPackageMap.has(itemLabId)) {
       matchedPkgId = idToPackageMap.get(itemLabId);
     }
-    // 2. Coba match via Nama Pemeriksaan / Teks Item Lab
+    // 2. Match via exact clean item name
     else if (itemNamaClean && nameToPackageMap.has(normalizeText(itemNamaClean))) {
       matchedPkgId = nameToPackageMap.get(normalizeText(itemNamaClean));
+    }
+    // 3. Partial match for lab item names
+    else if (itemNamaClean) {
+      const upperClean = normalizeText(itemNamaClean);
+      for (const [nameKey, pkgId] of nameToPackageMap.entries()) {
+        if (upperClean.includes(nameKey) || nameKey.includes(upperClean)) {
+          matchedPkgId = pkgId;
+          break;
+        }
+      }
     }
 
     if (matchedPkgId && packagesMap.has(matchedPkgId)) {
@@ -99,10 +133,8 @@ export function convertLabItemsToPackages(tindakanList = [], helperLabList = [])
     }
   });
 
-  // Gabungkan hasil: paket yang matched + item sisa
   const result = [];
 
-  // Masukkan paket yang cocok
   packagesMap.forEach(pkg => {
     if (pkg.matchedCount > 0) {
       result.push({
@@ -115,7 +147,6 @@ export function convertLabItemsToPackages(tindakanList = [], helperLabList = [])
     }
   });
 
-  // Masukkan item sisa yang tidak masuk ke paket mana pun
   remainingItems.forEach(item => {
     result.push({
       nama: item.nama,
@@ -129,44 +160,46 @@ export function convertLabItemsToPackages(tindakanList = [], helperLabList = [])
 }
 
 /**
- * Mendapatkan string gabungan nama layanan (misal: "DL + PEMERIKSAAN UMUM")
+ * Format nama layanan lengkap dengan Helper Lab Paket DAN Helper WA Blast (Singkatan Tindakan)
  */
-export function getConvertedLayananString(tindakanList = [], helperLabList = []) {
-  if (typeof tindakanList === 'string') {
-    // Jika input sudah berupa string gabungan
-    return tindakanList;
-  }
-  const convertedItems = convertLabItemsToPackages(tindakanList, helperLabList);
-  return convertedItems.map(item => item.nama).filter(Boolean).join(' + ');
-}
+export function formatTindakanWithHelpers(tindakanInput, helperLabList = [], helperWaList = []) {
+  // 1. Konversi item laboratorium ke Nama Paket
+  const labConvertedItems = convertLabItemsToPackages(tindakanInput, helperLabList);
 
-/**
- * Format nama layanan lengkap dengan Helper WA Blast (Singkatan Tindakan)
- */
-export function formatTindakanWithHelpers(tindakanList = [], helperLabList = [], helperWaList = []) {
-  const convertedItems = convertLabItemsToPackages(
-    typeof tindakanList === 'string' ? [{ nama: tindakanList, biaya: 0 }] : tindakanList,
-    helperLabList
-  );
+  // 2. Buat list untuk Singkatan Tindakan (Helper WA)
+  const waRules = Array.isArray(helperWaList) ? helperWaList.filter(h => h.jenisTindakan && h.singkatan) : [];
 
-  // Buat lookup map untuk Singkatan Tindakan WA
-  const waAbbrevMap = new Map();
-  if (Array.isArray(helperWaList)) {
-    helperWaList.forEach(h => {
-      if (h.jenisTindakan && h.singkatan) {
-        waAbbrevMap.set(normalizeText(h.jenisTindakan), String(h.singkatan).trim());
+  const finalNames = labConvertedItems.map(item => {
+    let origName = String(item.nama || '').trim();
+    if (!origName) return '';
+
+    // Cari matching pada Helper Wa Blast (Singkatan Tindakan)
+    if (waRules.length > 0) {
+      for (const rule of waRules) {
+        const targetClean = String(rule.jenisTindakan || '').trim();
+        const abbrev = String(rule.singkatan || '').trim();
+        if (!targetClean || !abbrev) continue;
+
+        // Exact match
+        if (normalizeText(origName) === normalizeText(targetClean)) {
+          origName = abbrev;
+          break;
+        }
+        // Partial substring match (jika origName mengandung targetClean)
+        else if (normalizeText(origName).includes(normalizeText(targetClean))) {
+          const reg = new RegExp(targetClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+          origName = origName.replace(reg, abbrev);
+          break;
+        }
       }
-    });
-  }
-
-  const finalNames = convertedItems.map(item => {
-    const origName = String(item.nama || '').trim();
-    const origUpper = normalizeText(origName);
-    if (waAbbrevMap.has(origUpper)) {
-      return waAbbrevMap.get(origUpper);
     }
+
     return origName;
   });
 
   return finalNames.filter(Boolean).join(' + ');
+}
+
+export function getConvertedLayananString(tindakanInput = [], helperLabList = [], helperWaList = []) {
+  return formatTindakanWithHelpers(tindakanInput, helperLabList, helperWaList);
 }

@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { getFirebaseDataAsArray, deleteFirebaseItem, updateFirebaseItem, logAudit, formatDisplayDate } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessToast, showErrorToast, showWarningToast } from '../utils/toast';
-import { getConvertedLayananString } from '../utils/labHelper';
+import { formatTindakanWithHelpers } from '../utils/labHelper';
 
 export default function Transaksi() {
   const [trxList, setTrxList] = useState([]);
   const [helperLabList, setHelperLabList] = useState([]);
+  const [helperWaList, setHelperWaList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,12 +29,14 @@ export default function Transaksi() {
 
   const loadTransaksi = async () => {
     setLoading(true);
-    const [data, labHelpers] = await Promise.all([
+    const [data, labHelpers, waHelpers] = await Promise.all([
       getFirebaseDataAsArray('Transaksi'),
-      getFirebaseDataAsArray('Settings/HelperLabPaket')
+      getFirebaseDataAsArray('Settings/HelperLabPaket'),
+      getFirebaseDataAsArray('Settings/HelperWaBlast')
     ]);
     setTrxList(data.reverse());
     setHelperLabList(labHelpers);
+    setHelperWaList(waHelpers);
     setLoading(false);
   };
 
@@ -341,9 +344,11 @@ export default function Transaksi() {
                         <div className="badge bg-secondary bg-opacity-10 text-secondary">{t.JenisPasien || 'Umum'}</div>
                       </td>
                       <td style={{ maxWidth: '200px' }} className="text-wrap text-break">
-                        {(t.TindakanList && t.TindakanList.length > 0)
-                          ? getConvertedLayananString(t.TindakanList, helperLabList)
-                          : (t.NamaPelayanan || '-')}
+                        {formatTindakanWithHelpers(
+                          (t.TindakanList && t.TindakanList.length > 0) ? t.TindakanList : (t.NamaPelayanan || ''),
+                          helperLabList,
+                          helperWaList
+                        ) || '-'}
                       </td>
                       <td className="text-end fw-bold text-success">{formatRupiah(t.TotalBayar)}</td>
                         <td className="text-center pe-4">
