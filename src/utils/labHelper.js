@@ -4,6 +4,28 @@
 
 const normalizeText = (str) => String(str || '').trim().toUpperCase();
 
+/**
+ * Membersihkan awalan "Lab:", "PEMERIKSAAN " untuk pencocokan & tampilan yang bersih
+ */
+export function cleanPrefix(str) {
+  let s = String(str || '').trim();
+  s = s.replace(/^Lab:\s*/i, '');
+  s = s.replace(/^PEMERIKSAAN\s+/i, '');
+  return s.trim();
+}
+
+/**
+ * Normalisasi ID (misal "0034" dan "34" dianggap sama)
+ */
+export function normalizeId(idStr) {
+  const clean = normalizeText(idStr);
+  if (!clean) return '';
+  if (/^\d+$/.test(clean)) {
+    return String(parseInt(clean, 10));
+  }
+  return clean;
+}
+
 export function parseIdList(rawStr) {
   if (Array.isArray(rawStr)) {
     return rawStr.map(x => normalizeText(x)).filter(Boolean);
@@ -77,8 +99,15 @@ export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []
 
     packagesMap.set(pkgId, packageEntry);
 
-    ids.forEach(id => idToPackageMap.set(id, pkgId));
-    names.forEach(name => nameToPackageMap.set(name, pkgId));
+    ids.forEach(id => {
+      idToPackageMap.set(id, pkgId);
+      idToPackageMap.set(normalizeId(id), pkgId);
+    });
+
+    names.forEach(name => {
+      nameToPackageMap.set(normalizeText(name), pkgId);
+      nameToPackageMap.set(normalizeText(cleanPrefix(name)), pkgId);
+    });
 
     // Automated fallback matching for common package names
     const upperPkg = pkgName.toUpperCase();
@@ -88,6 +117,7 @@ export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []
     } else if (upperPkg.includes('WIDAL')) {
       nameToPackageMap.set('WIDAL', pkgId);
       nameToPackageMap.set('PEMERIKSAAN IMUNOLOGI - PERDA', pkgId);
+      nameToPackageMap.set('IMUNOLOGI', pkgId);
     } else if (upperPkg.includes('UL') || upperPkg.includes('URINE LENGKAP')) {
       nameToPackageMap.set('URINE LENGKAP', pkgId);
       nameToPackageMap.set('URINE', pkgId);
@@ -98,8 +128,9 @@ export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []
 
   items.forEach(item => {
     const itemNama = String(item.nama || '').trim();
-    const itemNamaClean = itemNama.replace(/^Lab:\s*/i, '').trim();
+    const itemNamaClean = cleanPrefix(itemNama);
     const itemLabId = normalizeText(item.labId);
+    const itemLabIdNorm = normalizeId(item.labId);
     const itemBiaya = Number(item.biaya) || 0;
 
     let matchedPkgId = null;
@@ -107,8 +138,10 @@ export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []
     // 1. Match via labId
     if (itemLabId && idToPackageMap.has(itemLabId)) {
       matchedPkgId = idToPackageMap.get(itemLabId);
+    } else if (itemLabIdNorm && idToPackageMap.has(itemLabIdNorm)) {
+      matchedPkgId = idToPackageMap.get(itemLabIdNorm);
     }
-    // 2. Match via exact clean item name
+    // 2. Match via clean item name
     else if (itemNamaClean && nameToPackageMap.has(normalizeText(itemNamaClean))) {
       matchedPkgId = nameToPackageMap.get(normalizeText(itemNamaClean));
     }
@@ -166,35 +199,37 @@ export function formatTindakanWithHelpers(tindakanInput, helperLabList = [], hel
   // 1. Konversi item laboratorium ke Nama Paket
   const labConvertedItems = convertLabItemsToPackages(tindakanInput, helperLabList);
 
-  // 2. Buat list untuk Singkatan Tindakan (Helper WA)
+  // 2. List untuk Singkatan Tindakan (Helper WA)
   const waRules = Array.isArray(helperWaList) ? helperWaList.filter(h => h.jenisTindakan && h.singkatan) : [];
 
   const finalNames = labConvertedItems.map(item => {
-    let origName = String(item.nama || '').trim();
-    if (!origName) return '';
+    const rawName = String(item.nama || '').trim();
+    if (!rawName) return '';
+
+    const cleaned = cleanPrefix(rawName);
 
     // Cari matching pada Helper Wa Blast (Singkatan Tindakan)
     if (waRules.length > 0) {
       for (const rule of waRules) {
-        const targetClean = String(rule.jenisTindakan || '').trim();
+        const targetClean = cleanPrefix(rule.jenisTindakan);
         const abbrev = String(rule.singkatan || '').trim();
         if (!targetClean || !abbrev) continue;
 
-        // Exact match
-        if (normalizeText(origName) === normalizeText(targetClean)) {
-          origName = abbrev;
-          break;
-        }
-        // Partial substring match (jika origName mengandung targetClean)
-        else if (normalizeText(origName).includes(normalizeText(targetClean))) {
-          const reg = new RegExp(targetClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-          origName = origName.replace(reg, abbrev);
-          break;
+        const normClean = normalizeText(cleaned);
+        const normTarget = normalizeText(targetClean);
+
+        // Match jika nama bersih persis sama atau saling mengandung (partial match)
+        if (normClean === normTarget || normClean.includes(normTarget) || normTarget.includes(normClean)) {
+          return abbrev; // Ganti seluruh item secara bersih dengan Teks Singkatan
         }
       }
     }
 
-    return origName;
+    // Jika item sudah dari Paket Lab (isPaket), gunakan nama paketnya
+    if (item.isPaket) return item.nama;
+
+    // Jika item biasa (bukan paket lab), tampilkan nama yang sudah dibersihkan dari "Lab: PEMERIKSAAN "
+    return cleaned || rawName;
   });
 
   return finalNames.filter(Boolean).join(' + ');
