@@ -165,11 +165,11 @@ export function convertLabItemsToPackages(tindakanInput = [], helperLabList = []
     else if (itemNamaClean && nameToPackageMap.has(normalizeText(itemNamaClean))) {
       matchedPkgId = nameToPackageMap.get(normalizeText(itemNamaClean));
     }
-    // 3. Substring match for lab item names
+    // 3. Substring match for lab item names (hanya jika item pasien mengandung key nama lab)
     else if (itemNamaClean) {
       const upperClean = normalizeText(itemNamaClean);
       for (const [nameKey, pkgId] of nameToPackageMap.entries()) {
-        if (nameKey && (upperClean.includes(nameKey) || nameKey.includes(upperClean))) {
+        if (nameKey && nameKey.length >= 3 && upperClean.includes(nameKey)) {
           matchedPkgId = pkgId;
           break;
         }
@@ -238,8 +238,9 @@ export function formatTindakanWithHelpers(tindakanInput, helperLabList = [], hel
         const normClean = normalizeText(cleaned);
         const normTarget = normalizeText(targetClean);
 
-        // Match jika nama bersih persis sama atau saling mengandung (partial match)
-        if (normClean === normTarget || normClean.includes(normTarget) || normTarget.includes(normClean)) {
+        // Match HANYA jika item pasien persis sama atau mengandung Teks Asli (normClean.includes(normTarget))
+        // PENTING: Jangan gunakan normTarget.includes(normClean) karena menyebabkan false-positive pada teks singkat seperti "Konsul dr."!
+        if (normClean === normTarget || normClean.includes(normTarget)) {
           return abbrev; // Ganti seluruh item secara bersih dengan Teks Singkatan
         }
       }
