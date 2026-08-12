@@ -1,3 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<path fill="#4F46E5" d="M312 160c13.3 0 24-10.7 24-24s-10.7-24-24-24H160c-13.3 0-24 10.7-24 24s10.7 24 24 24h152zM216 264c13.3 0 24-10.7 24-24s-10.7-24-24-24H160c-13.3 0-24 10.7-24 24s10.7 24 24 24h56zm104-48c0-13.3-10.7-24-24-24s-24 10.7-24 24s10.7 24 24 24s24-10.7 24-24zm0 96c0-13.3-10.7-24-24-24s-24 10.7-24 24s10.7 24 24 24s24-10.7 24-24zm-104 24c13.3 0 24-10.7 24-24s-10.7-24-24-24H160c-13.3 0-24 10.7-24 24s10.7 24 24 24h56zM464 256v32H48c0-17.7 14.3-32 32-32H464zM480 320c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H480zm-16-160V144c0-26.5-21.5-48-48-48H96c-26.5 0-48 21.5-48 48v16c0 17.7 14.3 32 32 32H432c17.7 0 32-14.3 32-32z"/>
+  <!-- Green Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="#198754" />
+  
+  <!-- Customer Display Casing & Pole -->
+  <rect x="300" y="160" width="20" height="30" fill="#7f8c8d" />
+  <rect x="250" y="120" width="130" height="40" rx="4" fill="#34495e" />
+  
+  <!-- Receipt Paper -->
+  <path d="M165 180 L 165 110 L 185 135 L 205 110 L 225 135 L 245 110 L 245 180 Z" fill="#ffffff" />
+  <!-- Receipt Lines -->
+  <rect x="180" y="150" width="45" height="4" fill="#bdc3c7" />
+  <rect x="180" y="165" width="30" height="4" fill="#bdc3c7" />
+  
+  <!-- Register Upper Body -->
+  <path d="M150 180 h 210 a 10 10 0 0 1 10 10 v 50 h -230 v -50 a 10 10 0 0 1 10 -10 z" fill="#f1f2f6" />
+  <!-- Cashier Screen -->
+  <rect x="250" y="195" width="90" height="25" fill="#1abc9c" />
+  
+  <!-- Keyboard (Trapezoid) -->
+  <path d="M140 240 l -30 90 h 290 l -30 -90 z" fill="#dfe4ea" />
+  
+  <!-- Diagonal Shadow/Shine overlay on Keyboard -->
+  <path d="M140 240 h 110 l -70 90 h -110 z" fill="#ffffff" opacity="0.5" />
+  
+  <!-- Buttons Row 1 -->
+  <circle cx="165" cy="265" r="12" fill="#a4b0be" />
+  <circle cx="205" cy="265" r="12" fill="#a4b0be" />
+  <circle cx="245" cy="265" r="12" fill="#a4b0be" />
+  <circle cx="285" cy="265" r="12" fill="#a4b0be" />
+  <circle cx="325" cy="265" r="12" fill="#a4b0be" />
+  <circle cx="365" cy="265" r="12" fill="#e74c3c" />
+  
+  <!-- Buttons Row 2 -->
+  <circle cx="150" cy="305" r="12" fill="#a4b0be" />
+  <circle cx="195" cy="305" r="12" fill="#a4b0be" />
+  <circle cx="240" cy="305" r="12" fill="#a4b0be" />
+  <circle cx="285" cy="305" r="12" fill="#a4b0be" />
+  <circle cx="330" cy="305" r="12" fill="#a4b0be" />
+  <circle cx="375" cy="305" r="12" fill="#1abc9c" />
+  
+  <!-- Base Separator -->
+  <rect x="110" y="330" width="290" height="15" fill="#a4b0be" />
+  
+  <!-- Cash Drawer -->
+  <rect x="110" y="345" width="290" height="70" fill="#747d8c" />
+  <!-- Drawer lock -->
+  <circle cx="255" cy="380" r="10" fill="#f1f2f6" />
 </svg>
