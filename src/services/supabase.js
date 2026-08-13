@@ -31,33 +31,56 @@ export function isSupabaseConfigured() {
  * @returns {{ success: boolean, url: string, error?: string }}
  */
 export async function uploadTemplateFile(file, templateId) {
-  if (!isSupabaseConfigured()) {
-    return { success: false, error: 'Supabase belum dikonfigurasi. Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY di file .env' };
-  }
-
   try {
-    const ext = file.name.split('.').pop().toLowerCase();
-    const storagePath = `laporan-pendapatan/${templateId}.${ext}`;
+    // 1. Minta presigned URL dari Vercel
+    const response = await fetch('/api/storage', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'upload',
+        fileName: `${templateId}.${file.name.split('.').pop().toLowerCase()}`,
+        contentType: file.type || 'application/octet-stream',
+        folder: 'laporan-pendapatan'
+      })
+    });
 
-    // Upload file (upsert = replace jika sudah ada)
-    const { error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(storagePath, file, {
-        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        upsert: true
-      });
+    const result = await response.json();
 
-    if (error) throw error;
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Gagal mendapatkan upload URL');
+    }
 
-    // Ambil public URL
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(storagePath);
+    // 2. Upload file langsung ke RustFS
+    const uploadResponse = await fetch(result.uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream'
+      },
+      body: file
+    });
 
-    return { success: true, url: urlData.publicUrl };
+    if (!uploadResponse.ok) {
+      throw new Error(
+        `Upload ke RustFS gagal: HTTP ${uploadResponse.status}`
+      );
+    }
+
+    // 3. Simpan URL + key
+    return {
+      success: true,
+      url: result.uploadUrl,
+      key: result.key
+    };
+
   } catch (err) {
-    console.error('Supabase upload error:', err);
-    return { success: false, error: err.message };
+    console.error('RustFS upload error:', err);
+
+    return {
+      success: false,
+      error: err.message
+    };
   }
 }
 
