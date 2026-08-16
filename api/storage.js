@@ -16,6 +16,7 @@ const s3 = new S3Client({
   region: 'us-east-1',
   endpoint,
   forcePathStyle: true,
+  requestChecksumCalculation: 'WHEN_REQUIRED',
   credentials: {
     accessKeyId: accessKey,
     secretAccessKey: secretKey,
