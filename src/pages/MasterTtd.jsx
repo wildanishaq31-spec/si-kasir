@@ -62,10 +62,15 @@ export default function MasterTtd() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const payload = { 
+      id: formData.id,
       TtdID: formData.id,
-      Jabatan: formData.dbJabatan, // Important: save it with the original text or fixed text so keyword matching works
+      isEdit: Boolean(formData.id),
+      Jabatan: formData.dbJabatan || formData.jabatan,
+      jabatan: formData.dbJabatan || formData.jabatan,
       Nama: formData.nama,
-      Nip: formData.nip
+      nama: formData.nama,
+      Nip: formData.nip,
+      nip: formData.nip
     };
     
     // if id is empty, saveMasterItem will generate a new one

@@ -70,6 +70,11 @@ export async function getFirebaseDataAsArray(path) {
     }));
   } catch (error) {
     console.error(`Error reading path ${path}:`, error);
+    // Jika PERMISSION_DENIED, lempar error agar tidak dianggap data kosong
+    const errStr = String(error?.message || error || '');
+    if (errStr.includes('PERMISSION_DENIED') || errStr.includes('Permission denied')) {
+      throw error;
+    }
     return [];
   }
 }
@@ -93,13 +98,25 @@ export async function loginUser(username, password) {
       // 1. Coba login menggunakan Firebase Authentication
       userCredential = await signInWithEmailAndPassword(auth, email, password);
     } catch (authErr) {
+      // Jika error karena masalah permission di RTDB (yang dilempar), lempar ke luar
+      const authErrStr = String(authErr?.message || authErr || '');
+      if (authErrStr.includes('PERMISSION_DENIED') || authErrStr.includes('Permission denied')) {
+        throw authErr;
+      }
+
       // Jika user belum ada di Firebase Auth (misal user lama di RTDB sebelum migrasi),
       // lakukan auto-migration dari RTDB ke Firebase Auth
       if (
         authErr.code === 'auth/user-not-found' ||
         authErr.code === 'auth/invalid-credential'
       ) {
-        const rtdbUsers = await getFirebaseDataAsArray('Users');
+        let rtdbUsers = [];
+        try {
+          rtdbUsers = await getFirebaseDataAsArray('Users');
+        } catch (rtdbErr) {
+          throw rtdbErr;
+        }
+
         const existingRtdbUser = rtdbUsers.find(
           u => String(u.Username).trim().toLowerCase() === cleanUsername.toLowerCase()
         );
@@ -188,7 +205,10 @@ export async function loginUser(username, password) {
   } catch (err) {
     console.error('Login error:', err);
     let msg = 'Username atau password salah!';
-    if (err.code === 'auth/too-many-requests') {
+    const errStr = String(err?.message || err || '');
+    if (errStr.includes('PERMISSION_DENIED') || errStr.includes('Permission denied')) {
+      msg = 'Akses Realtime Database Ditolak (PERMISSION_DENIED). Silakan perbarui Rules Database di Firebase Console.';
+    } else if (err.code === 'auth/too-many-requests') {
       msg = 'Terlalu banyak percobaan login gagal. Akun diblokir sementara demi keamanan.';
     } else if (err.code === 'auth/user-disabled') {
       msg = 'Akun ini telah dinonaktifkan di Firebase Authentication.';
@@ -225,9 +245,11 @@ export async function logAudit(username, action, detail) {
 }
 
 // Save Master Data (Create / Edit)
-export async function saveMasterItem(pathNode, payload) {
+export async function saveMasterItem(pathNode, payload = {}) {
   try {
-    const idToUse = (payload.isEdit && payload.id) ? payload.id : 
+    const existingId = payload.id || payload.TtdID || payload.PoliID || payload.PelayananID;
+    const isEdit = payload.isEdit || Boolean(existingId);
+    const idToUse = (isEdit && existingId) ? existingId : 
       (pathNode === 'MasterPoli' ? `POL-${Date.now()}` : 
        pathNode === 'MasterTtd' ? `TTD-${Date.now()}` : `LAY-${Date.now()}`);
 
@@ -235,11 +257,15 @@ export async function saveMasterItem(pathNode, payload) {
     let rowData = {};
 
     if (pathNode === 'MasterTtd') {
-      rowData = { TtdID: idToUse, Jabatan: payload.jabatan, Nama: payload.nama, Nip: payload.nip };
+      const jabatan = payload.Jabatan ?? payload.jabatan ?? payload.dbJabatan ?? '';
+      const nama = payload.Nama ?? payload.nama ?? '';
+      const nip = payload.Nip ?? payload.nip ?? '';
+      rowData = { TtdID: idToUse, Jabatan: jabatan, Nama: nama, Nip: nip };
     } else {
+      const nama = payload.Nama ?? payload.nama ?? payload.NamaPoli ?? payload.NamaPelayanan ?? '';
       rowData = {
         [pathNode === 'MasterPoli' ? 'PoliID' : 'PelayananID']: idToUse,
-        [pathNode === 'MasterPoli' ? 'NamaPoli' : 'NamaPelayanan']: payload.nama
+        [pathNode === 'MasterPoli' ? 'NamaPoli' : 'NamaPelayanan']: nama
       };
     }
 
