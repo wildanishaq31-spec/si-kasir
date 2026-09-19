@@ -597,6 +597,43 @@ export async function saveImportPayload(fileName, items, username, importType = 
   }
 }
 
+// Delete Import Batch and its associated Transactions
+export async function deleteImportBatch(importId, fileName = '', username = '') {
+  try {
+    if (!importId) {
+      return { success: false, message: 'ImportID tidak valid!' };
+    }
+
+    // 1. Ambil seluruh data transaksi
+    const allTrx = await getFirebaseDataAsArray('Transaksi');
+    const matchedTrx = allTrx.filter(t => t.ImportID && String(t.ImportID).trim() === String(importId).trim());
+
+    // 2. Hapus seluruh data transaksi yang cocok dari RTDB
+    const deletePromises = matchedTrx.map(t => {
+      const trxKey = t._id || t.TransaksiID;
+      return remove(ref(db, `Transaksi/${trxKey}`));
+    });
+    await Promise.all(deletePromises);
+
+    // 3. Hapus data dari RiwayatImport
+    const historyRef = ref(db, `RiwayatImport/${importId}`);
+    await remove(historyRef);
+
+    // 4. Catat ke Audit Log
+    await logAudit(
+      username || 'SYSTEM',
+      'DELETE_IMPORT',
+      `Hapus riwayat import ${importId} (${fileName || 'Tanpa Nama File'}) dan ${matchedTrx.length} data transaksi terkait`
+    );
+
+    return { success: true, deletedTrxCount: matchedTrx.length };
+  } catch (err) {
+    console.error('Error deleting import batch:', err);
+    return { success: false, message: err.message || 'Gagal menghapus batch import' };
+  }
+}
+
+
 // Save User (Create / Edit) via Firebase Authentication + RTDB
 export async function saveUser(payload) {
   try {
