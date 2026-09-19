@@ -35,23 +35,14 @@ export default function DownloadApp() {
                 <div class="d-flex gap-2">
                   <i class="fa-solid fa-mobile-screen fs-4 text-success flex-shrink-0 mt-1"></i>
                   <div>
-                    <strong class="text-dark">Cara Membuka Mode Layar Penuh (Tanpa URL Bar):</strong><br/>
-                    <span class="text-secondary">Silakan kembali ke <strong>Layar Utama (Home Screen)</strong> HP atau Desktop Anda, lalu klik ikon aplikasi <strong>SI-KASIR</strong>. Aplikasi akan otomatis terbuka dalam mode penuh tanpa address bar browser.</span>
+                    <span class="text-dark">Silakan kembali ke <strong>Layar Utama (Home Screen)</strong> HP atau Desktop Anda, lalu klik ikon <strong>SI-KASIR</strong> untuk mulai menggunakan aplikasi dalam mode layar penuh.</span>
                   </div>
                 </div>
               </div>
             </div>
           `,
-          showCancelButton: true,
           confirmButtonColor: '#198754',
-          cancelButtonColor: '#6c757d',
-          confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Buka dari Layar Utama',
-          cancelButtonText: 'Lanjut di Browser Ini',
-          reverseButtons: true
-        }).then((result) => {
-          if (!result.isConfirmed) {
-            navigate('/login');
-          }
+          confirmButtonText: 'OK, Mengerti'
         });
       } else if (res.outcome === 'dismissed') {
         showInfoToast('Instalasi Dibatalkan', 'Anda dapat mencoba menginstal kembali kapan saja.');
