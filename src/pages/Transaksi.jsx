@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getFirebaseDataAsArray, deleteFirebaseItem, updateFirebaseItem, logAudit, formatDisplayDate, deduplicateAllTransactions } from '../services/firebase';
+import { getFirebaseDataAsArray, deleteFirebaseItem, updateFirebaseItem, logAudit, formatDisplayDate } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { showSuccessToast, showErrorToast, showWarningToast, showInfoToast } from '../utils/toast';
 import { formatTindakanWithHelpers } from '../utils/labHelper';
+import ScanDuplicateModal from '../components/ScanDuplicateModal';
 import Swal from 'sweetalert2';
 
 export default function Transaksi() {
@@ -10,7 +11,7 @@ export default function Transaksi() {
   const [helperLabList, setHelperLabList] = useState([]);
   const [helperWaList, setHelperWaList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cleaning, setCleaning] = useState(false);
+  const [showScanModal, setShowScanModal] = useState(false);
   const [filterDate, setFilterDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,52 +47,10 @@ export default function Transaksi() {
     loadTransaksi();
   }, []);
 
-  const handleCleanupDuplicates = async () => {
-    const result = await Swal.fire({
-      title: 'Bersihkan Duplikasi Transaksi?',
-      html: `
-        <div class="text-start small">
-          <p class="mb-2">Sistem akan memindai seluruh data transaksi dan:</p>
-          <ul class="mb-3 text-secondary">
-            <li>Menghapus rincian tindakan/lab yang terduplikasi (misal 2x GolDa dari import ganda).</li>
-            <li>Menghitung ulang total bayar yang benar (misal dari Rp 50.000 kembali menjadi Rp 35.000).</li>
-            <li>Menyinkronkan total ke Laporan Pendapatan & LPPKP.</li>
-          </ul>
-        </div>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#198754',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: '<i class="fa-solid fa-wand-magic-sparkles me-1"></i> Mulai Pembersihan',
-      cancelButtonText: 'Batal'
-    });
-
-    if (result.isConfirmed) {
-      setCleaning(true);
-      Swal.fire({
-        title: 'Sedang Memeriksa & Membersihkan...',
-        text: 'Memperbaiki rincian biaya transaksi ganda...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
-
-      const res = await deduplicateAllTransactions(user?.username || user?.nama || 'SYSTEM');
-      Swal.close();
-      setCleaning(false);
-
-      if (res.success) {
-        if (res.fixedCount > 0) {
-          showSuccessToast('Pembersihan Berhasil!', `Berhasil memperbaiki ${res.fixedCount} transaksi yang sempat duplikat.`);
-        } else {
-          showInfoToast('Data Sudah Rapi', 'Tidak ditemukan data transaksi yang terduplikasi.');
-        }
-        loadTransaksi();
-      } else {
-        showErrorToast('Gagal Membersihkan', res.message);
-      }
-    }
+  const handleOpenScan = () => {
+    setShowScanModal(true);
   };
+
 
 
   // Single Delete
@@ -292,11 +251,11 @@ export default function Transaksi() {
               <div className="d-flex gap-2">
                 <button
                   className="btn btn-outline-success shadow-sm text-nowrap flex-grow-1"
-                  onClick={handleCleanupDuplicates}
-                  disabled={cleaning || loading}
-                  title="Perbaiki transaksi duplikat akibat double import"
+                  onClick={handleOpenScan}
+                  disabled={loading}
+                  title="Pindai dan perbaiki transaksi duplikat"
                 >
-                  <i className={`fa-solid fa-wand-magic-sparkles ${cleaning ? 'fa-spin' : ''}`}></i> Bersihkan
+                  <i className="fa-solid fa-wand-magic-sparkles me-1"></i> Scan Duplikat
                 </button>
                 <button
                   className="btn btn-success shadow-sm text-nowrap flex-grow-1"
@@ -581,6 +540,14 @@ export default function Transaksi() {
           </div>
         </div>
       )}
+
+      {/* Modal Scan & Pratinjau Duplikasi */}
+      <ScanDuplicateModal
+        show={showScanModal}
+        onClose={() => setShowScanModal(false)}
+        onSuccess={loadTransaksi}
+        username={user?.username}
+      />
     </div>
   );
 }

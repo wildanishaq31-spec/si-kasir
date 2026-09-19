@@ -641,74 +641,123 @@ export async function saveImportPayload(fileName, items, username, importType = 
   }
 }
 
-// Helper: Deduplicate all transactions across the database
-export async function deduplicateAllTransactions(username = 'SYSTEM') {
+// Helper: Scan all transactions for duplicates without applying changes
+export async function scanDuplicateTransactions() {
   try {
     const allTrx = await getFirebaseDataAsArray('Transaksi');
-    let fixedCount = 0;
+    const issues = [];
 
     for (const trx of allTrx) {
       const trxKey = trx._id || trx.TransaksiID;
       if (!trxKey) continue;
 
       let list = Array.isArray(trx.TindakanList) ? [...trx.TindakanList] : [];
-      let isModified = false;
+      let isDuplicate = false;
+      const seen = new Map();
+      const uniqueList = [];
+      const duplicateDetails = [];
 
-      // 1. Cek duplikasi di TindakanList
-      if (list.length > 1) {
-        const seen = new Set();
-        const uniqueList = [];
+      for (const it of list) {
+        const rawName = String(it.nama || it.jenisTindakan || '').trim();
+        const cleanName = rawName.replace(/^Lab:\s*/i, '').toUpperCase();
+        const biaya = Number(it.biaya) || 0;
+        const labId = String(it.labId || '').trim();
+        const uniqueKey = labId ? `ID_${labId}_${biaya}` : `NAME_${cleanName}_${biaya}`;
 
-        for (const it of list) {
-          const rawName = String(it.nama || it.jenisTindakan || '').trim();
-          const cleanName = rawName.replace(/^Lab:\s*/i, '').toUpperCase();
-          const biaya = Number(it.biaya) || 0;
-          const labId = String(it.labId || '').trim();
-          
-          const uniqueKey = labId ? `ID_${labId}_${biaya}` : `NAME_${cleanName}_${biaya}`;
-
-          if (!seen.has(uniqueKey)) {
-            seen.add(uniqueKey);
-            uniqueList.push(it);
-          } else {
-            // Ditemukan duplikat yang sama persis
-            isModified = true;
-          }
-        }
-
-        if (isModified) {
-          list = uniqueList;
-        }
-      }
-
-      // 2. Hitung ulang total jika list diubah atau total bayar tidak sinkron
-      if (list.length > 0) {
-        const correctTotal = list.reduce((sum, it) => sum + (Number(it.biaya) || 0), 0);
-        if (isModified || Number(trx.TotalBayar) !== correctTotal || Number(trx.Tarif) !== correctTotal) {
-          isModified = true;
-          const newNamaStr = list.map(x => x.nama || x.jenisTindakan).join(' + ');
-
-          await update(ref(db, `Transaksi/${trxKey}`), {
-            TindakanList: list,
-            TotalBayar: correctTotal,
-            Tarif: correctTotal,
-            NamaPelayanan: newNamaStr
+        if (!seen.has(uniqueKey)) {
+          seen.set(uniqueKey, 1);
+          uniqueList.push(it);
+        } else {
+          seen.set(uniqueKey, seen.get(uniqueKey) + 1);
+          isDuplicate = true;
+          duplicateDetails.push({
+            nama: rawName,
+            biaya: biaya,
+            cleanName: cleanName
           });
-          fixedCount++;
         }
       }
+
+      const currentTotal = Number(trx.TotalBayar) || 0;
+      const newTotal = uniqueList.length > 0
+        ? uniqueList.reduce((sum, it) => sum + (Number(it.biaya) || 0), 0)
+        : currentTotal;
+
+      // Check if duplicate items exist OR total is out of sync with unique list
+      if (isDuplicate || (list.length > 0 && currentTotal !== newTotal)) {
+        issues.push({
+          trxKey,
+          noTransaksi: trx.NoTransaksi || trx.TransaksiID || trxKey,
+          namaPasien: trx.NamaPasien || '-',
+          tanggal: trx.Tanggal || '-',
+          currentTotal,
+          newTotal,
+          currentLayanan: trx.NamaPelayanan || list.map(x => x.nama || x.jenisTindakan).join(' + '),
+          newLayanan: uniqueList.map(x => x.nama || x.jenisTindakan).join(' + '),
+          duplicateDetails,
+          cleanList: uniqueList
+        });
+      }
+    }
+
+    return {
+      success: true,
+      totalScanned: allTrx.length,
+      issuesFound: issues.length,
+      issues
+    };
+  } catch (err) {
+    console.error('Error scanning duplicates:', err);
+    return { success: false, message: err.message, issues: [], totalScanned: 0, issuesFound: 0 };
+  }
+}
+
+// Apply fixes to scanned issues
+export async function applyDeduplicateFixes(issues = [], username = 'SYSTEM') {
+  try {
+    if (!issues || issues.length === 0) return { success: true, fixedCount: 0 };
+    let fixedCount = 0;
+
+    for (const item of issues) {
+      if (!item.trxKey) continue;
+      const trxRef = ref(db, `Transaksi/${item.trxKey}`);
+      await update(trxRef, {
+        TindakanList: item.cleanList,
+        TotalBayar: item.newTotal,
+        Tarif: item.newTotal,
+        NamaPelayanan: item.newLayanan
+      });
+      fixedCount++;
     }
 
     if (fixedCount > 0) {
-      await logAudit(username, 'CLEANUP_DUPLICATE', `Membersihkan ${fixedCount} transaksi duplikat / total tidak sinkron`);
+      await logAudit(
+        username,
+        'CLEANUP_DUPLICATE',
+        `Berhasil membersihkan ${fixedCount} transaksi duplikat`
+      );
     }
 
     return { success: true, fixedCount };
+  } catch (err) {
+    console.error('Error applying fixes:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+// Helper: Deduplicate all transactions across the database directly
+export async function deduplicateAllTransactions(username = 'SYSTEM') {
+  try {
+    const scanRes = await scanDuplicateTransactions();
+    if (!scanRes.success) return { success: false, message: scanRes.message };
+    const applyRes = await applyDeduplicateFixes(scanRes.issues, username);
+    return applyRes;
   } catch (err) {
     console.error('Error in deduplicateAllTransactions:', err);
     return { success: false, message: err.message };
   }
 }
+
 
 // Delete Import Batch and its associated Transactions (including merged lab tests)
 export async function deleteImportBatch(importId, fileName = '', username = '') {

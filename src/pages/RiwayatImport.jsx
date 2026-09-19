@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getFirebaseDataAsArray, deleteImportBatch, deduplicateAllTransactions } from '../services/firebase';
+import { getFirebaseDataAsArray, deleteImportBatch } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
-import { showSuccessToast, showErrorToast, showInfoToast } from '../utils/toast';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
+import ScanDuplicateModal from '../components/ScanDuplicateModal';
 import Swal from 'sweetalert2';
 
 export default function RiwayatImport() {
   const [historyList, setHistoryList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cleaning, setCleaning] = useState(false);
+  const [showScanModal, setShowScanModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
 
@@ -34,52 +35,6 @@ export default function RiwayatImport() {
     loadHistory();
   }, []);
 
-  const handleCleanupDuplicates = async () => {
-    const result = await Swal.fire({
-      title: 'Bersihkan Duplikasi Transaksi?',
-      html: `
-        <div class="text-start small">
-          <p class="mb-2">Sistem akan memindai seluruh data transaksi dan:</p>
-          <ul class="mb-3 text-secondary">
-            <li>Menghapus rincian tindakan/lab yang terduplikasi (misal 2x GolDa dari import ganda).</li>
-            <li>Menghitung ulang total bayar yang benar (misal dari Rp 50.000 kembali menjadi Rp 35.000).</li>
-            <li>Menyinkronkan total ke Laporan Pendapatan & LPPKP.</li>
-          </ul>
-        </div>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#198754',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: '<i class="fa-solid fa-wand-magic-sparkles me-1"></i> Mulai Pembersihan',
-      cancelButtonText: 'Batal'
-    });
-
-    if (result.isConfirmed) {
-      setCleaning(true);
-      Swal.fire({
-        title: 'Sedang Memeriksa & Membersihkan...',
-        text: 'Memperbaiki rincian biaya transaksi ganda...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
-
-      const res = await deduplicateAllTransactions(user?.username || user?.nama || 'SYSTEM');
-      Swal.close();
-      setCleaning(false);
-
-      if (res.success) {
-        if (res.fixedCount > 0) {
-          showSuccessToast('Pembersihan Berhasil!', `Berhasil memperbaiki ${res.fixedCount} transaksi yang sempat duplikat.`);
-        } else {
-          showInfoToast('Data Sudah Rapi', 'Tidak ditemukan data transaksi yang terduplikasi.');
-        }
-        loadHistory();
-      } else {
-        showErrorToast('Gagal Membersihkan', res.message);
-      }
-    }
-  };
 
 
   const handleDelete = async (item) => {
@@ -191,12 +146,12 @@ export default function RiwayatImport() {
           </div>
           <button 
             className="btn btn-sm btn-outline-success d-flex align-items-center gap-1 shadow-sm text-nowrap" 
-            onClick={handleCleanupDuplicates}
-            disabled={cleaning || loading}
-            title="Scan dan perbaiki transaksi duplikat akibat double import"
+            onClick={() => setShowScanModal(true)}
+            disabled={loading}
+            title="Scan dan tinjau transaksi duplikat sebelum dibersihkan"
           >
-            <i className={`fa-solid fa-wand-magic-sparkles ${cleaning ? 'fa-spin' : ''}`}></i>
-            <span className="d-none d-sm-inline">Bersihkan Duplikasi</span>
+            <i className="fa-solid fa-wand-magic-sparkles"></i>
+            <span className="d-none d-sm-inline">Scan Duplikasi</span>
           </button>
           <button 
             className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 shadow-sm text-nowrap" 
@@ -326,6 +281,14 @@ export default function RiwayatImport() {
           </table>
         </div>
       </div>
+
+      {/* Modal Scan & Pratinjau Duplikasi */}
+      <ScanDuplicateModal
+        show={showScanModal}
+        onClose={() => setShowScanModal(false)}
+        onSuccess={loadHistory}
+        username={user?.username}
+      />
     </div>
   );
 }
