@@ -5,7 +5,6 @@ import { showSuccessToast, showInfoToast } from '../utils/toast';
 import Swal from 'sweetalert2';
 
 import logoCermee from '../assets/logo_cermee.jpg';
-import logoBondowoso from '../assets/logo_bondowoso.jpg';
 
 export default function DownloadApp() {
   const navigate = useNavigate();
@@ -25,17 +24,34 @@ export default function DownloadApp() {
       if (res.outcome === 'accepted') {
         Swal.fire({
           icon: 'success',
-          title: 'Berhasil Diinstal!',
+          title: 'Aplikasi Berhasil Terpasang!',
           html: `
             <div class="text-center">
-              <p class="mb-2">Aplikasi <b>SI-KASIR RME</b> telah berhasil terpasang di perangkat Anda.</p>
-              <p class="text-muted small mb-0">Ikon aplikasi sekarang sudah muncul di Desktop / Home Screen.</p>
+              <div class="mb-3">
+                <img src="/favicon.svg" alt="SI-KASIR Icon" style="width: 72px; height: 72px;" class="shadow-sm rounded-circle p-1 bg-white" />
+              </div>
+              <p class="fw-bold text-success fs-6 mb-2">Ikon SI-KASIR telah ditambahkan ke Layar Utama (Home Screen) / Desktop Anda!</p>
+              <div class="alert alert-success py-3 px-3 small text-start mb-0 rounded-4 border-0" style="background-color: #e8f5e9;">
+                <div class="d-flex gap-2">
+                  <i class="fa-solid fa-mobile-screen fs-4 text-success flex-shrink-0 mt-1"></i>
+                  <div>
+                    <strong class="text-dark">Cara Membuka Mode Layar Penuh (Tanpa URL Bar):</strong><br/>
+                    <span class="text-secondary">Silakan kembali ke <strong>Layar Utama (Home Screen)</strong> HP atau Desktop Anda, lalu klik ikon aplikasi <strong>SI-KASIR</strong>. Aplikasi akan otomatis terbuka dalam mode penuh tanpa address bar browser.</span>
+                  </div>
+                </div>
+              </div>
             </div>
           `,
+          showCancelButton: true,
           confirmButtonColor: '#198754',
-          confirmButtonText: 'Buka Aplikasi Sekarang'
-        }).then(() => {
-          navigate('/login');
+          cancelButtonColor: '#6c757d',
+          confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Buka dari Layar Utama',
+          cancelButtonText: 'Lanjut di Browser Ini',
+          reverseButtons: true
+        }).then((result) => {
+          if (!result.isConfirmed) {
+            navigate('/login');
+          }
         });
       } else if (res.outcome === 'dismissed') {
         showInfoToast('Instalasi Dibatalkan', 'Anda dapat mencoba menginstal kembali kapan saja.');
@@ -47,10 +63,10 @@ export default function DownloadApp() {
         }
         Swal.fire({
           icon: 'info',
-          title: 'Panduan Instalasi',
+          title: 'Panduan Instalasi Manual',
           html: `
             <div class="text-start small">
-              <p>Untuk menginstal secara manual di browser Anda:</p>
+              <p>Untuk menginstal secara langsung di browser Anda:</p>
               <ol class="ps-3 mb-0 text-secondary">
                 <li>Klik ikon <b>Instal</b> <i class="fa-solid fa-download mx-1 text-success"></i> di ujung kanan kolom alamat browser (URL bar).</li>
                 <li>Atau klik menu titik tiga <b>(⋮)</b> di pojok kanan atas browser ➔ Pilih <b>"Instal SI-KASIR"</b> / <b>"Tambahkan ke Layar Utama"</b>.</li>
@@ -75,11 +91,20 @@ export default function DownloadApp() {
       <nav className="navbar navbar-expand-lg bg-white border-bottom shadow-sm py-3 px-4">
         <div className="container d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-3">
-            <img src={logoBondowoso} alt="Logo Bondowoso" style={{ height: '42px', width: 'auto' }} />
-            <img src={logoCermee} alt="Logo Puskesmas Cermee" style={{ height: '42px', width: 'auto' }} />
-            <div className="border-start ps-3 d-none d-sm-block">
+            {/* Circular Logo Only with no square background */}
+            <div 
+              className="rounded-circle overflow-hidden d-flex align-items-center justify-content-center shadow-xs border border-success border-opacity-25" 
+              style={{ width: '44px', height: '44px', backgroundColor: '#ffffff' }}
+            >
+              <img 
+                src={logoCermee} 
+                alt="Logo Puskesmas Cermee" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} 
+              />
+            </div>
+            <div>
               <h6 className="fw-bold text-dark mb-0 fs-6">SI-KASIR RME</h6>
-              <small className="text-success fw-semibold">Puskesmas Cermee Bondowoso</small>
+              <small className="text-success fw-semibold">Puskesmas Cermee</small>
             </div>
           </div>
           <div className="d-flex align-items-center gap-2">
@@ -116,8 +141,9 @@ export default function DownloadApp() {
             <div className="card border-0 shadow-lg rounded-4 p-4 mb-4 bg-white">
               <div className="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3">
                 <div className="d-flex align-items-center gap-3">
-                  <div className="rounded-4 bg-success text-white p-3 d-flex align-items-center justify-content-center shadow-sm" style={{ width: '60px', height: '60px' }}>
-                    <i className="fa-solid fa-cash-register fs-3"></i>
+                  {/* Clean Circular Favicon Icon */}
+                  <div className="rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style={{ width: '60px', height: '60px' }}>
+                    <img src="/favicon.svg" alt="SI-KASIR Favicon" style={{ width: '100%', height: '100%' }} />
                   </div>
                   <div className="text-start">
                     <h6 className="fw-bold text-dark mb-1">SI-KASIR RME Desktop & Mobile</h6>
@@ -156,7 +182,7 @@ export default function DownloadApp() {
                 )}
               </div>
 
-              <div className="d-flex align-items-center gap-4 mt-3 pt-3 border-top text-muted small">
+              <div className="d-flex align-items-center gap-4 mt-3 pt-3 border-top text-muted small flex-wrap">
                 <div className="d-flex align-items-center gap-1">
                   <i className="fa-solid fa-bolt text-warning"></i> Akses Instan
                 </div>
@@ -338,7 +364,7 @@ export default function DownloadApp() {
                         Pilih menu <strong>"Tambahkan ke Layar Utama"</strong> atau <strong>"Instal Aplikasi"</strong>.
                       </li>
                       <li className="list-group-item bg-transparent px-0 py-2 border-0">
-                        Ikon SI-KASIR akan langsung muncul di daftar aplikasi smartphone Anda.
+                        Ikon SI-KASIR akan langsung muncul di daftar aplikasi smartphone Anda. Buka dari ikon tersebut untuk mode layar penuh tanpa URL bar!
                       </li>
                     </ol>
                   </div>
