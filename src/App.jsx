@@ -19,6 +19,7 @@ import RiwayatImport from './pages/RiwayatImport';
 import HakAkses from './pages/HakAkses';
 import DownloadApp from './pages/DownloadApp';
 import SplashScreen from './components/SplashScreen';
+import { isPwaMobileApp } from './utils/pwaHelper';
 
 function PermissionGate({ menuKey, children }) {
   const { hasPermission } = useAuth();
@@ -144,7 +145,8 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  // Splash Screen hanya tampil di PWA Android / Mobile App, langsung bypass jika dibuka di Desktop Browser
+  const [showSplash, setShowSplash] = useState(() => isPwaMobileApp());
 
   return (
     <>

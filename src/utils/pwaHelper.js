@@ -8,9 +8,28 @@ export function isStandaloneMode() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true ||
-    document.referrer.includes('android-app://')
+    document.referrer.includes('android-app://') ||
+    window.location.search.includes('source=pwa')
   );
 }
+
+/**
+ * Cek apakah aplikasi dibuka khusus dari PWA Android / Smartphone
+ */
+export function isPwaMobileApp() {
+  if (typeof window === 'undefined') return false;
+
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  const isStandalone = (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    document.referrer.includes('android-app://') ||
+    window.location.search.includes('source=pwa')
+  );
+
+  return isMobile && isStandalone;
+}
+
 
 /**
  * Cek apakah browser siap menampilkan prompt instalasi PWA

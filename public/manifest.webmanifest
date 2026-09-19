@@ -2,12 +2,12 @@
   "name": "SI-KASIR RME PKM CERMEE",
   "short_name": "SI-KASIR",
   "description": "Sistem Informasi Kasir & Rekonsiliasi Keuangan Puskesmas Cermee",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0d5c3a",
   "theme_color": "#0d5c3a",
-  "orientation": "any",
+  "orientation": "portrait-primary",
   "categories": ["medical", "finance", "productivity"],
   "icons": [
     {
