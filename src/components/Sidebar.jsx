@@ -206,6 +206,18 @@ export default function Sidebar({ isOpen, toggleSidebar, isCollapsed, toggleColl
               )}
             </div>
           )}
+
+          {/* Download App PWA Link */}
+          <div className="sidebar-section-header">APLIKASI</div>
+          <NavLink
+            to="/download"
+            className={({ isActive }) => `nav-item-custom ${isActive ? 'active' : ''}`}
+            onClick={handleNavClick}
+            title={isCollapsed ? "Download / Instal App" : undefined}
+          >
+            <i className="fa-solid fa-cloud-arrow-down flex-shrink-0" style={{ color: '#38bdf8' }}></i>
+            <span className="nav-item-text">Instal Aplikasi</span>
+          </NavLink>
         </div>
 
         {/* User Profile Widget */}

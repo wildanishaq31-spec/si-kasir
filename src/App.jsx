@@ -17,6 +17,7 @@ import MasterPrint from './pages/MasterPrint';
 import MasterWaBlast from './pages/MasterWaBlast';
 import RiwayatImport from './pages/RiwayatImport';
 import HakAkses from './pages/HakAkses';
+import DownloadApp from './pages/DownloadApp';
 
 function PermissionGate({ menuKey, children }) {
   const { hasPermission } = useAuth();
@@ -145,6 +146,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/download" element={<DownloadApp />} />
       <Route
         path="/*"
         element={

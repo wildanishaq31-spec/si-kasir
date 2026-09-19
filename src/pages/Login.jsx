@@ -230,9 +230,22 @@ export default function Login() {
               </div>
             </form>
 
+            {/* Download App PWA Link */}
+            <div className="mt-3 text-center" style={{ opacity: 0, animation: 'fadeInPage 0.8s ease-out 0.65s forwards' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/download')}
+                className="btn btn-sm btn-outline-success border-0 rounded-pill px-3 py-1 fw-semibold text-decoration-none d-inline-flex align-items-center gap-2"
+                style={{ backgroundColor: 'rgba(24, 152, 92, 0.08)' }}
+              >
+                <i className="fa-solid fa-cloud-arrow-down"></i>
+                <span>Download / Instal Aplikasi Desktop & HP</span>
+              </button>
+            </div>
+
             {/* Session Validity Notice Box */}
             <div
-              className="mt-4 p-3 rounded-4 border-0 d-flex align-items-center justify-content-center text-center shadow-xs"
+              className="mt-3 p-3 rounded-4 border-0 d-flex align-items-center justify-content-center text-center shadow-xs"
               style={{
                 backgroundColor: '#eefbf3',
                 color: '#117849',
