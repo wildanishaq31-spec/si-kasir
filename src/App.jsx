@@ -18,6 +18,7 @@ import MasterWaBlast from './pages/MasterWaBlast';
 import RiwayatImport from './pages/RiwayatImport';
 import HakAkses from './pages/HakAkses';
 import DownloadApp from './pages/DownloadApp';
+import SplashScreen from './components/SplashScreen';
 
 function PermissionGate({ menuKey, children }) {
   const { hasPermission } = useAuth();
@@ -143,18 +144,23 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/download" element={<DownloadApp />} />
-      <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+    <>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/download" element={<DownloadApp />} />
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </>
   );
 }
