@@ -579,14 +579,14 @@ export default function LaporanPendapatan() {
       {/* Parameter Filter Card with Datepicker Calendar */}
       <div className="card rounded-4 border-0 mb-4 shadow-sm">
         <div className="card-body p-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
             <h6 className="fw-bold m-0 text-dark">
               <i className="fa-solid fa-calendar-days me-2 text-primary"></i> Parameter Laporan Pendapatan
             </h6>
-            <div className="d-flex gap-2">
+            <div className="d-flex align-items-center gap-2 flex-wrap">
               <button
-                className="btn text-white shadow-sm fw-bold px-4 rounded-pill"
-                style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}
+                className="btn text-white shadow-sm fw-bold px-3 px-sm-4 py-2 rounded-pill text-nowrap d-inline-flex align-items-center justify-content-center"
+                style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', border: 'none' }}
                 onClick={handlePreviewWa}
                 disabled={reportRows.length === 0 || waLoading}
                 title="Kirim ke WhatsApp"
@@ -595,7 +595,7 @@ export default function LaporanPendapatan() {
                 WA Blast
               </button>
               <button
-                className="btn btn-success shadow-sm fw-bold px-4 rounded-pill"
+                className="btn btn-success shadow-sm fw-bold px-3 px-sm-4 py-2 rounded-pill text-nowrap d-inline-flex align-items-center justify-content-center"
                 onClick={handleExportExcel}
                 disabled={reportRows.length === 0}
                 title="Download Excel (.xlsx) Bebas Warning"
