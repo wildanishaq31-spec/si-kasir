@@ -148,6 +148,16 @@ export default function Transaksi() {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);
   };
 
+  const formatNoTrxDisplay = (noTrx) => {
+    if (!noTrx) return '-';
+    // Hapus buntut nama pasien yang panjang agar tampilan No. Trx ringkas dan rapi
+    const match = String(noTrx).match(/^(TRX-\d{2}-\d{2}-\d{4}-\d+)(?:-[A-Za-z0-9]+)?(.*)$/);
+    if (match) {
+      return `${match[1]}${match[2] || ''}`;
+    }
+    return noTrx;
+  };
+
   const getSortTimestamp = (item) => {
     if (!item || !item.Tanggal) return 0;
     const tglStr = String(item.Tanggal).trim();
@@ -307,8 +317,11 @@ export default function Transaksi() {
       )}
 
       <div className="card rounded-4 border-0 shadow-sm overflow-hidden">
-        <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0 small">
+        {/* ========================================================
+            TAMPILAN 1: DESKTOP / LAPTOP (SPREADSHEET TABLE VIEW)
+           ======================================================== */}
+        <div className="table-responsive d-none d-md-block">
+          <table className="table table-hover align-middle mb-0 small" style={{ minWidth: '880px' }}>
             <thead className="thead-gradient">
               <tr>
                 <th className="ps-4" style={{ width: '45px' }}>
@@ -321,12 +334,12 @@ export default function Transaksi() {
                     style={{ cursor: 'pointer' }}
                   />
                 </th>
-                <th>No. Trx / RM</th>
-                <th>Tanggal</th>
-                <th>Pasien</th>
-                <th>Layanan</th>
-                <th className="text-end">Total Bayar</th>
-                <th className="text-center pe-4">Aksi</th>
+                <th style={{ minWidth: '180px' }}>No. Trx / RM</th>
+                <th style={{ minWidth: '110px' }}>Tanggal</th>
+                <th style={{ minWidth: '180px' }}>Pasien</th>
+                <th style={{ minWidth: '160px' }}>Layanan</th>
+                <th className="text-end" style={{ minWidth: '110px' }}>Total Bayar</th>
+                <th className="text-center pe-4" style={{ minWidth: '90px' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -353,13 +366,15 @@ export default function Transaksi() {
                           style={{ cursor: 'pointer' }}
                         />
                       </td>
-                      <td style={{ maxWidth: '240px' }}>
-                        <div className="fw-bold text-break">{t.NoTransaksi || '-'}</div>
+                      <td className="text-nowrap" style={{ maxWidth: '240px' }}>
+                        <div className="fw-bold font-monospace text-dark" title={t.NoTransaksi}>
+                          {formatNoTrxDisplay(t.NoTransaksi)}
+                        </div>
                         <div className="text-muted small">RM: {t.NoRM || '-'}</div>
                       </td>
-                      <td className="fw-semibold">{formatDisplayDate(t.Tanggal)}</td>
+                      <td className="fw-semibold text-nowrap">{formatDisplayDate(t.Tanggal)}</td>
                       <td>
-                        <div className="fw-semibold">{t.NamaPasien || '-'}</div>
+                        <div className="fw-semibold text-dark">{t.NamaPasien || '-'}</div>
                         <div className="badge bg-secondary bg-opacity-10 text-secondary">{t.JenisPasien || 'Umum'}</div>
                       </td>
                       <td style={{ maxWidth: '200px' }} className="text-wrap text-break">
@@ -369,33 +384,172 @@ export default function Transaksi() {
                           helperWaList
                         ) || '-'}
                       </td>
-                      <td className="text-end fw-bold text-success">{formatRupiah(t.TotalBayar)}</td>
-                        <td className="text-center pe-4">
-                          <button
-                            className="btn btn-sm btn-outline-warning border-0 rounded-circle me-1"
-                            onClick={() => {
-                              setEditData(t);
-                              setNewDate(t.Tanggal || '');
-                              setShowEditModal(true);
-                            }}
-                            title="Edit Tanggal"
-                          >
-                            <i className="fa-solid fa-calendar-alt"></i>
-                          </button>
-                          <button
-                            className="btn btn-sm btn-outline-danger border-0 rounded-circle"
-                            onClick={() => handleDelete(itemID)}
-                            title="Hapus"
-                          >
-                            <i className="fa-solid fa-trash"></i>
-                          </button>
-                        </td>
+                      <td className="text-end fw-bold text-success text-nowrap">{formatRupiah(t.TotalBayar)}</td>
+                      <td className="text-center pe-4 text-nowrap">
+                        <button
+                          className="btn btn-sm btn-outline-warning border-0 rounded-circle me-1"
+                          onClick={() => {
+                            setEditData(t);
+                            setNewDate(t.Tanggal || '');
+                            setShowEditModal(true);
+                          }}
+                          title="Edit Tanggal"
+                        >
+                          <i className="fa-solid fa-calendar-alt"></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                          onClick={() => handleDelete(itemID)}
+                          title="Hapus"
+                        >
+                          <i className="fa-solid fa-trash"></i>
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ========================================================
+            TAMPILAN 2: MOBILE / SMARTPHONE (MODERN CARD VIEW)
+           ======================================================== */}
+        <div className="d-block d-md-none p-3 bg-light bg-opacity-50">
+          {/* Header Mobile: Select All bar */}
+          {!loading && currentData.length > 0 && (
+            <div className="d-flex align-items-center justify-content-between p-2.5 mb-3 bg-white rounded-3 border shadow-xs">
+              <div className="d-flex align-items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="select-all-mobile"
+                  className="form-check-input shadow-none ms-1"
+                  checked={isAllSelected}
+                  onChange={handleToggleSelectAll}
+                  style={{ cursor: 'pointer' }}
+                />
+                <label htmlFor="select-all-mobile" className="small fw-bold text-secondary mb-0" style={{ cursor: 'pointer' }}>
+                  Pilih Semua ({currentData.length})
+                </label>
+              </div>
+              <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">
+                {filteredData.length} Total
+              </span>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="text-center py-5 text-muted bg-white rounded-4 border">
+              <div className="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+              <span>Memuat data transaksi...</span>
+            </div>
+          ) : currentData.length === 0 ? (
+            <div className="text-center py-5 text-muted bg-white rounded-4 border">
+              <i className="fa-solid fa-receipt fs-2 mb-2 text-muted opacity-50 d-block"></i>
+              <span>Tidak ada transaksi ditemukan.</span>
+            </div>
+          ) : (
+            currentData.map((t, idx) => {
+              const itemID = t.TransaksiID || t._id;
+              const isChecked = selectedIds.includes(itemID);
+              return (
+                <div
+                  key={itemID || idx}
+                  className={`card border rounded-4 p-3 mb-3 shadow-xs transition ${
+                    isChecked ? 'border-primary bg-primary-subtle bg-opacity-10' : 'bg-white'
+                  }`}
+                  style={{ transition: 'all 0.2s ease' }}
+                >
+                  {/* Card Header: Checkbox + No. Trx Badge + Tanggal */}
+                  <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <div className="d-flex align-items-center gap-2 overflow-hidden">
+                      <input
+                        type="checkbox"
+                        className="form-check-input shadow-none flex-shrink-0"
+                        checked={isChecked}
+                        onChange={() => handleToggleSelectRow(itemID)}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <span 
+                        className="badge bg-light text-dark border font-monospace text-truncate" 
+                        style={{ fontSize: '0.74rem' }}
+                        title={t.NoTransaksi}
+                      >
+                        {formatNoTrxDisplay(t.NoTransaksi)}
+                      </span>
+                    </div>
+                    <span className="small text-muted fw-semibold text-nowrap ms-2" style={{ fontSize: '0.78rem' }}>
+                      <i className="fa-regular fa-calendar me-1 text-success"></i>
+                      {formatDisplayDate(t.Tanggal)}
+                    </span>
+                  </div>
+
+                  {/* Card Body: Pasien + Total Bayar */}
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <div className="pe-2">
+                      <div className="fw-bold text-dark fs-6 mb-1 text-break">{t.NamaPasien || '-'}</div>
+                      <div className="d-flex align-items-center gap-2 flex-wrap">
+                        <span className="badge bg-secondary bg-opacity-10 text-secondary" style={{ fontSize: '0.7rem' }}>
+                          {t.JenisPasien || 'Umum'}
+                        </span>
+                        {t.NoRM && t.NoRM !== '-' && (
+                          <span className="small text-muted" style={{ fontSize: '0.75rem' }}>
+                            RM: <strong>{t.NoRM}</strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-end flex-shrink-0">
+                      <span className="small text-muted d-block" style={{ fontSize: '0.7rem' }}>Total Bayar</span>
+                      <span className="fw-bold text-success fs-6">{formatRupiah(t.TotalBayar)}</span>
+                    </div>
+                  </div>
+
+                  {/* Layanan Box */}
+                  <div className="bg-light p-2.5 rounded-3 small text-muted mb-2.5" style={{ fontSize: '0.78rem' }}>
+                    <div className="d-flex align-items-start gap-1.5">
+                      <i className="fa-solid fa-notes-medical text-success mt-1 flex-shrink-0"></i>
+                      <div>
+                        <span className="fw-semibold text-dark">Layanan: </span>
+                        <span>
+                          {formatTindakanWithHelpers(
+                            (t.TindakanList && t.TindakanList.length > 0) ? t.TindakanList : (t.NamaPelayanan || ''),
+                            helperLabList,
+                            helperWaList
+                          ) || '-'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Footer: Aksi Edit Tanggal & Hapus */}
+                  <div className="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+                    <button
+                      className="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-2xs"
+                      style={{ fontSize: '0.78rem' }}
+                      onClick={() => {
+                        setEditData(t);
+                        setNewDate(t.Tanggal || '');
+                        setShowEditModal(true);
+                      }}
+                    >
+                      <i className="fa-solid fa-calendar-alt"></i>
+                      <span>Edit Tanggal</span>
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-2xs"
+                      style={{ fontSize: '0.78rem' }}
+                      onClick={() => handleDelete(itemID)}
+                    >
+                      <i className="fa-solid fa-trash"></i>
+                      <span>Hapus</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
         
         {/* Pagination Controls */}

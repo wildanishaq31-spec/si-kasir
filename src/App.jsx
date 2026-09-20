@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import MobileBottomNav from './components/MobileBottomNav';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -31,6 +32,7 @@ function PermissionGate({ menuKey, children }) {
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem('si_kasir_sidebar_collapsed') === 'true';
   });
@@ -43,6 +45,14 @@ function Layout() {
       localStorage.setItem('si_kasir_sidebar_collapsed', String(next));
       return next;
     });
+  };
+
+  const handleToggleMenu = () => {
+    if (window.innerWidth <= 992) {
+      setMobileDrawerOpen(prev => !prev);
+    } else {
+      setSidebarOpen(prev => !prev);
+    }
   };
 
   const getPageTitle = (path) => {
@@ -71,7 +81,7 @@ function Layout() {
         toggleCollapse={toggleCollapse}
       />
       <main className="main-content">
-        <Topbar title={getPageTitle(location.pathname)} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <Topbar title={getPageTitle(location.pathname)} toggleSidebar={handleToggleMenu} />
         <div className="content-area page-transition-wrapper" key={location.pathname}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -134,6 +144,7 @@ function Layout() {
           </Routes>
         </div>
       </main>
+      <MobileBottomNav drawerOpen={mobileDrawerOpen} setDrawerOpen={setMobileDrawerOpen} />
     </div>
   );
 }

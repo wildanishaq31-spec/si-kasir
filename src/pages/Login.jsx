@@ -13,16 +13,31 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
 
   const isAuthConfigured = isFirebaseAuthConfigured();
 
+  // Jika sesi login masih aktif (belum expired), langsung arahkan ke Dashboard
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
+
   useEffect(() => {
     const savedUsername = localStorage.getItem('si_kasir_remembered_username');
+    const savedPassword = localStorage.getItem('si_kasir_remembered_password');
     if (savedUsername) {
       setUsername(savedUsername);
       setRememberMe(true);
+      if (savedPassword) {
+        try {
+          setPassword(decodeURIComponent(escape(atob(savedPassword))));
+        } catch {
+          setPassword(savedPassword);
+        }
+      }
     }
   }, []);
 
@@ -58,8 +73,14 @@ export default function Login() {
     if (res.success) {
       if (rememberMe) {
         localStorage.setItem('si_kasir_remembered_username', username);
+        try {
+          localStorage.setItem('si_kasir_remembered_password', btoa(unescape(encodeURIComponent(password))));
+        } catch {
+          localStorage.setItem('si_kasir_remembered_password', password);
+        }
       } else {
         localStorage.removeItem('si_kasir_remembered_username');
+        localStorage.removeItem('si_kasir_remembered_password');
       }
       login(res.user, rememberMe);
       navigate('/');
@@ -161,6 +182,9 @@ export default function Login() {
                   <span className="input-group-text bg-transparent border-0 text-muted px-3"><i className="fa-regular fa-user" style={{ fontSize: '1rem' }}></i></span>
                   <input
                     type="text"
+                    id="username"
+                    name="username"
+                    autoComplete="username"
                     className="form-control border-0 ps-0 fs-6 shadow-none"
                     placeholder="Masukkan username..."
                     value={username}
@@ -176,6 +200,9 @@ export default function Login() {
                   <span className="input-group-text bg-transparent border-0 text-muted px-3"><i className="fa-solid fa-lock" style={{ fontSize: '1rem' }}></i></span>
                   <input
                     type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    autoComplete="current-password"
                     className="form-control border-0 ps-0 fs-6 shadow-none"
                     placeholder="Masukkan password..."
                     value={password}
@@ -200,7 +227,14 @@ export default function Login() {
                     type="checkbox" 
                     id="rememberMe" 
                     checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setRememberMe(checked);
+                      if (!checked) {
+                        localStorage.removeItem('si_kasir_remembered_username');
+                        localStorage.removeItem('si_kasir_remembered_password');
+                      }
+                    }}
                     style={{ cursor: 'pointer' }}
                   />
                   <label className="form-check-label text-muted small" htmlFor="rememberMe" style={{ cursor: 'pointer', userSelect: 'none' }}>
