@@ -12,12 +12,44 @@
   --font-family: 'Inter', sans-serif;
 }
 
+html {
+  overscroll-behavior-y: none !important;
+  overscroll-behavior-x: none !important;
+  overscroll-behavior: none !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   background-color: var(--body-bg);
   font-family: var(--font-family);
   color: #1f2937;
   overflow-x: hidden;
   margin: 0;
+  overscroll-behavior-y: none !important;
+  overscroll-behavior-x: none !important;
+  overscroll-behavior: none !important;
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root,
+.app-wrapper,
+.main-content,
+.content-area {
+  overscroll-behavior-y: none !important;
+  overscroll-behavior-x: none !important;
+  overscroll-behavior: none !important;
+}
+
+/* Biarkan elemen yang membutuhkan scroll horizontal (misal tabel data / modal) tetap bisa di-scroll */
+.table-responsive,
+.overflow-auto,
+.overflow-x-auto,
+.horizontal-scroll,
+.dropdown-menu,
+.modal-body {
+  touch-action: pan-x pan-y pinch-zoom !important;
+  overscroll-behavior: contain !important;
 }
 
 /* ============================================================

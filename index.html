@@ -22,6 +22,17 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Disable mobile pull-to-refresh & horizontal swipe back/forward gestures -->
+    <style>
+      html, body {
+        overscroll-behavior-y: none !important;
+        overscroll-behavior-x: none !important;
+        overscroll-behavior: none !important;
+        touch-action: pan-y pinch-zoom;
+        -webkit-overflow-scrolling: touch;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
